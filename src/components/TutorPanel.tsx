@@ -433,18 +433,66 @@ export function TutorPanel({
               </option>
             ))}
           </select>
-          <label className="section-label">Model</label>
+          <div className="flex items-center gap-2">
+            <label className="section-label" style={{ margin: 0 }}>
+              Model
+            </label>
+            <label
+              className="ml-auto flex items-center gap-1 text-[11px]"
+              style={{ color: "var(--ink-muted)" }}
+            >
+              <input
+                type="checkbox"
+                checked={freeOnly}
+                onChange={(e) => setFreeOnly(e.target.checked)}
+              />
+              Free only
+            </label>
+            <button
+              className="tool-btn"
+              title="Refresh model list from the provider"
+              aria-label="Refresh model list"
+              onClick={() => void refreshModels()}
+            >
+              <RefreshCw size={13} className={loadingModels ? "animate-spin" : undefined} />
+            </button>
+          </div>
+          <input
+            className="field-input"
+            placeholder="Filter models…"
+            value={modelFilter}
+            onChange={(e) => setModelFilter(e.target.value)}
+          />
           <select
             className="field-input"
             value={settings.model}
             onChange={(e) => patch({ model: e.target.value })}
           >
-            {provider.models.map((m) => (
-              <option key={m} value={m}>
-                {m}
+            {!visibleModels.some((m) => m.id === settings.model) && settings.model && (
+              <option value={settings.model}>{settings.model} (current)</option>
+            )}
+            {visibleModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label === m.id ? m.id : `${m.label} — ${m.id}`}
+                {m.free ? "  · free" : ""}
               </option>
             ))}
           </select>
+          <p className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
+            {loadingModels
+              ? "Fetching the live model catalog…"
+              : catalogError
+                ? catalogError
+                : catalog.length
+                  ? `${visibleModels.length} of ${catalog.length} chat-capable models${
+                      freeOnly ? " (free ones only)" : ""
+                    }.`
+                  : "Paste your key to load this provider's live model list."}
+            {freeOnly && catalog.length > 0 && !catalog.some((m) => m.free) && (
+              <> This provider publishes no pricing, so nothing can be proven free.</>
+            )}
+          </p>
+
           <label className="section-label">API key</label>
           <div className="flex gap-1">
             <input
