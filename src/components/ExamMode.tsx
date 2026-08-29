@@ -119,8 +119,9 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
 
   // Tell the shell to keep the tutor quiet for the duration of the session.
   useEffect(() => {
-    const emit = (active: boolean) =>
+    const emit = (active: boolean) => {
       window.dispatchEvent(new CustomEvent("iale-exam-state", { detail: { active } }));
+    };
     emit(phase === "running");
     return () => emit(false);
   }, [phase]);
@@ -146,7 +147,7 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
   const tone =
     pct < 15 ? "var(--signal-rose)" : pct < 35 ? "var(--signal-amber)" : "var(--signal-blue)";
   const mmss = `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, "0")}`;
-  const weakest = useMemo(() => report?.concepts.filter((c) => c.correct / c.total < 0.7) ?? [], [report]);
+  const weakest = useMemo(() => report?.concepts.filter((c: ExamReport["concepts"][number]) => c.correct / c.total < 0.7) ?? [], [report]);
 
   return (
     <div
@@ -277,7 +278,7 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
 
             <div className="mt-5 flex flex-col gap-3">
               <span className="section-label">Per-concept mastery</span>
-              {report.concepts.map((c) => {
+              {report.concepts.map((c: ExamReport["concepts"][number]) => {
                 const ratio = c.correct / c.total;
                 const colour =
                   ratio >= 0.8
@@ -314,7 +315,7 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
 
             <p className="mt-4 text-xs" style={{ color: "var(--ink-muted)" }}>
               {weakest.length
-                ? `Weakest ground: ${weakest.map((c) => c.concept).join(", ")}. Socratic is back online and can see this report — ask it what to drill next.`
+                ? `Weakest ground: ${weakest.map((c: ExamReport["concepts"][number]) => c.concept).join(", ")}. Socratic is back online and can see this report — ask it what to drill next.`
                 : "Solid across every concept in this set. Socratic is back online if you want a harder pack."}
             </p>
 

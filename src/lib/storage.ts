@@ -10,6 +10,7 @@ export const KEYS = {
   LIBRARY: "iale_library",
   SESSION: "iale_session_memory",
   DRILL_REVIEWS: "iale_drill_reviews",
+  EXAM_REPORTS: "iale_exam_reports",
   THEME: "iale_theme",
 } as const;
 
@@ -64,6 +65,14 @@ export interface DrillReview {
   category: string;
   box: number;
   reviewedAt: number;
+}
+export interface ExamReport {
+  at: number;
+  durationS: number;
+  score: number;
+  total: number;
+  concepts: { concept: string; correct: number; total: number }[];
+  languages: string[];
 }
 export interface SerializedChallenge {
   id: string;
@@ -158,6 +167,21 @@ export const Storage = {
     const ok = write(KEYS.DRILL_REVIEWS, all);
     emit("iale-drill-reviewed", { category, box });
     return { ok };
+  },
+
+  saveExamReport(report: ExamReport) {
+    const all = read<ExamReport[]>(KEYS.EXAM_REPORTS, []);
+    const next = [...all, report].slice(-20);
+    const ok = write(KEYS.EXAM_REPORTS, next);
+    emit("iale-exam-report", report);
+    return { ok };
+  },
+  getExamReports(): ExamReport[] {
+    return read<ExamReport[]>(KEYS.EXAM_REPORTS, []);
+  },
+  getLastExamReport(): ExamReport | null {
+    const all = read<ExamReport[]>(KEYS.EXAM_REPORTS, []);
+    return all[all.length - 1] ?? null;
   },
 
   getMistakeSummary() {
@@ -261,6 +285,7 @@ export const Storage = {
       KEYS.LIBRARY,
       KEYS.SESSION,
       KEYS.DRILL_REVIEWS,
+      KEYS.EXAM_REPORTS,
     ])
       window.localStorage.removeItem(key);
     emit("iale-data-cleared");
