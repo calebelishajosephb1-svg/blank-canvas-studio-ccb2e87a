@@ -104,7 +104,8 @@ export function parsePack(text: string): PackParse {
       ...(Array.isArray(c.hints) ? { hints: c.hints } : {}),
     });
   }
-  if (!challenges.length) return { ok: false, error: "None of the challenges in that file parsed." };
+  if (!challenges.length)
+    return { ok: false, error: "None of the challenges in that file parsed." };
   return {
     ok: true,
     pack: {

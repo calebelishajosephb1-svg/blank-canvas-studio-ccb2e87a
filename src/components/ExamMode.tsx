@@ -64,37 +64,34 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
   const [report, setReport] = useState<ExamReport | null>(null);
   const timer = useRef<number | null>(null);
 
-  const finish = useCallback(
-    (qs: Question[], given: boolean[], spent: number) => {
-      const byConcept = new Map<string, { correct: number; total: number }>();
-      let score = 0;
-      qs.forEach((q, i) => {
-        const answered = i < given.length;
-        const right = answered && given[i] === q.expected;
-        if (right) score++;
-        for (const c of q.concepts) {
-          const entry = byConcept.get(c) ?? { correct: 0, total: 0 };
-          entry.total++;
-          if (right) entry.correct++;
-          byConcept.set(c, entry);
-        }
-      });
-      const built: ExamReport = {
-        at: Date.now(),
-        durationS: spent,
-        score,
-        total: qs.length,
-        concepts: [...byConcept.entries()]
-          .map(([concept, v]) => ({ concept, ...v }))
-          .sort((a, b) => a.correct / a.total - b.correct / b.total),
-        languages: [...new Set(qs.map((q) => q.challenge.name))],
-      };
-      Storage.saveExamReport(built);
-      setReport(built);
-      setPhase("report");
-    },
-    [],
-  );
+  const finish = useCallback((qs: Question[], given: boolean[], spent: number) => {
+    const byConcept = new Map<string, { correct: number; total: number }>();
+    let score = 0;
+    qs.forEach((q, i) => {
+      const answered = i < given.length;
+      const right = answered && given[i] === q.expected;
+      if (right) score++;
+      for (const c of q.concepts) {
+        const entry = byConcept.get(c) ?? { correct: 0, total: 0 };
+        entry.total++;
+        if (right) entry.correct++;
+        byConcept.set(c, entry);
+      }
+    });
+    const built: ExamReport = {
+      at: Date.now(),
+      durationS: spent,
+      score,
+      total: qs.length,
+      concepts: [...byConcept.entries()]
+        .map(([concept, v]) => ({ concept, ...v }))
+        .sort((a, b) => a.correct / a.total - b.correct / b.total),
+      languages: [...new Set(qs.map((q) => q.challenge.name))],
+    };
+    Storage.saveExamReport(built);
+    setReport(built);
+    setPhase("report");
+  }, []);
 
   // Countdown — only while a session is actually running.
   useEffect(() => {
@@ -147,7 +144,12 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
   const tone =
     pct < 15 ? "var(--signal-rose)" : pct < 35 ? "var(--signal-amber)" : "var(--signal-blue)";
   const mmss = `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, "0")}`;
-  const weakest = useMemo(() => report?.concepts.filter((c: ExamReport["concepts"][number]) => c.correct / c.total < 0.7) ?? [], [report]);
+  const weakest = useMemo(
+    () =>
+      report?.concepts.filter((c: ExamReport["concepts"][number]) => c.correct / c.total < 0.7) ??
+      [],
+    [report],
+  );
 
   return (
     <div
@@ -202,9 +204,9 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
             <GraduationCap size={28} style={{ color: "var(--signal-blue)" }} className="mx-auto" />
             <h2 className="mt-2 text-xl">Timed assessment</h2>
             <p className="mt-2 text-sm" style={{ color: "var(--ink-muted)" }}>
-              {QUESTIONS} questions across up to six languages, {DURATION_S / 60} minutes, no
-              hints. <strong>Socratic is offline for the duration</strong> — you get the tutor back
-              with your report card, which breaks the result down per concept rather than into one
+              {QUESTIONS} questions across up to six languages, {DURATION_S / 60} minutes, no hints.{" "}
+              <strong>Socratic is offline for the duration</strong> — you get the tutor back with
+              your report card, which breaks the result down per concept rather than into one
               number.
             </p>
             <button

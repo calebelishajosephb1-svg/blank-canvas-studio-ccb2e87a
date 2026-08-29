@@ -16,9 +16,7 @@ export interface ImportedMachine {
   alphabet: string[];
 }
 
-export type ImportResult =
-  | { ok: true; data: ImportedMachine }
-  | { ok: false; error: string };
+export type ImportResult = { ok: true; data: ImportedMachine } | { ok: false; error: string };
 
 const esc = (s: string) => s.replace(/"/g, '\\"');
 const xmlEsc = (s: string) =>
@@ -72,7 +70,11 @@ export function fromDot(text: string): ImportResult {
       error: "Subgraphs and clusters aren't supported — import DOT exported by this app.",
     };
 
-  const unquote = (s: string) => s.trim().replace(/^"(.*)"$/s, "$1").replace(/\\"/g, '"');
+  const unquote = (s: string) =>
+    s
+      .trim()
+      .replace(/^"(.*)"$/s, "$1")
+      .replace(/\\"/g, '"');
   const states = new Map<string, { accepting: boolean; x?: number; y?: number }>();
   const edges: { from: string; to: string; symbols: string[] }[] = [];
   let startLabel: string | null = null;
@@ -87,7 +89,9 @@ export function fromDot(text: string): ImportResult {
   };
 
   const nodeName = String.raw`(?:"(?:[^"\\]|\\.)*"|[A-Za-z_][\w.]*)`;
-  const edgeRe = new RegExp(`^\\s*(${nodeName})\\s*->\\s*(${nodeName})\\s*(\\[[^\\]]*\\])?\\s*;?\\s*$`);
+  const edgeRe = new RegExp(
+    `^\\s*(${nodeName})\\s*->\\s*(${nodeName})\\s*(\\[[^\\]]*\\])?\\s*;?\\s*$`,
+  );
   const nodeRe = new RegExp(`^\\s*(${nodeName})\\s*(\\[[^\\]]*\\])\\s*;?\\s*$`);
 
   for (const raw of text.split(/\r?\n/)) {
@@ -180,7 +184,10 @@ export function fromJflap(xml: string): ImportResult {
   if (doc.querySelector("parsererror")) return { ok: false, error: "Malformed JFLAP XML." };
   const type = doc.querySelector("type")?.textContent?.trim();
   if (type && type !== "fa")
-    return { ok: false, error: `JFLAP "${type}" machines aren't supported — finite automata only.` };
+    return {
+      ok: false,
+      error: `JFLAP "${type}" machines aren't supported — finite automata only.`,
+    };
 
   const nodes = [...doc.querySelectorAll("state, block")];
   if (!nodes.length) return { ok: false, error: "No states found in that JFLAP file." };
@@ -228,11 +235,9 @@ export function toTikz(machine: Machine): string {
   const start = startOf(machine);
   const body: string[] = [];
   for (const s of machine.states) {
-    const opts = [
-      "state",
-      s.isStart ? "initial" : null,
-      s.isAccepting ? "accepting" : null,
-    ].filter(Boolean);
+    const opts = ["state", s.isStart ? "initial" : null, s.isAccepting ? "accepting" : null].filter(
+      Boolean,
+    );
     body.push(
       `  \\node[${opts.join(",")}] (${safeTikz(s.label)}) at (${(s.x * scale).toFixed(2)},${(-s.y * scale).toFixed(2)}) {$${texLabel(s.label)}$};`,
     );

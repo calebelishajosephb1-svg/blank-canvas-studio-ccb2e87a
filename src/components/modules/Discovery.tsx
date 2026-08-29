@@ -374,7 +374,9 @@ export function Discovery({
     const url = packUrl(buildPack("IALE assignment pack", list.slice(0, 8)));
     void navigator.clipboard
       ?.writeText(url)
-      .then(() => toast.success("Pack link copied", { description: "Opens straight into these challenges" }))
+      .then(() =>
+        toast.success("Pack link copied", { description: "Opens straight into these challenges" }),
+      )
       .catch(() => toast.error("Clipboard blocked — export the pack file instead"));
   };
 

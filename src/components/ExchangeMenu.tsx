@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { FileDown, FileUp } from "lucide-react";
 import type { Machine } from "@/lib/machine";
-import {
-  downloadText,
-  importMachineFile,
-  toDot,
-  toJflap,
-  toSvg,
-  toTikz,
-} from "@/lib/exchange";
+import { downloadText, importMachineFile, toDot, toJflap, toSvg, toTikz } from "@/lib/exchange";
 
 /**
  * Export the canvas to the formats courses already use (Graphviz DOT, JFLAP
@@ -42,7 +35,11 @@ export function ExchangeMenu({
     };
   }, [open]);
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "automaton";
+  const slug =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "automaton";
 
   const guard = (fn: () => void) => () => {
     if (!machine.states.length) {
@@ -127,8 +124,8 @@ export function ExchangeMenu({
             <FileUp size={12} /> DOT or JFLAP file…
           </button>
           <p className="px-2 pb-1 pt-1 text-[10px]" style={{ color: "var(--ink-disabled)" }}>
-            JFLAP is parsed fully; DOT import covers this app's own export shape,
-            not arbitrary hand-written graphs.
+            JFLAP is parsed fully; DOT import covers this app's own export shape, not arbitrary
+            hand-written graphs.
           </p>
           <input
             ref={file}
