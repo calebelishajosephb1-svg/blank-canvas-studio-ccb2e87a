@@ -11,7 +11,21 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // dependency anywhere, so SPA mode + prerender of the shell is the honest target
 // and no server runtime (nor Netlify Function) is needed at runtime: the static
 // assets in dist/client are the whole deployable.
+// NVIDIA's integrate API sends no CORS headers, so a browser cannot call it
+// directly. This same-origin pass-through path (mirrored by netlify.toml in
+// production) forwards the request upstream; the student's key is only relayed,
+// never stored or logged.
 export default defineConfig({
+  server: {
+    proxy: {
+      "/api-proxy/nvidia": {
+        target: "https://integrate.api.nvidia.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path: string) => path.replace(/^\/api-proxy\/nvidia/, ""),
+      },
+    },
+  },
   nitro: false,
   tanstackStart: {
     spa: { enabled: true, prerender: { crawlLinks: false } },
