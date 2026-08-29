@@ -14,17 +14,66 @@ export interface ChatMessage {
   content: string;
 }
 
+/** One selectable model, as discovered live from the provider's own catalog. */
+export interface ModelInfo {
+  id: string;
+  label: string;
+  /** true = provably free, false = provably paid, undefined = provider publishes no pricing. */
+  free?: boolean;
+}
+
 export interface ProviderConfig {
   id: ProviderId;
   label: string;
   keyPlaceholder: string;
   keysUrl: string;
+  /** Last-resort seeds used only if the live catalog cannot be fetched. */
   models: string[];
-  endpoint: string;
+  /** Real API origin. */
+  origin: string;
+  /** Path of the chat/completions endpoint, relative to the origin. */
+  chatPath: string;
+  /** Path of the model-catalog endpoint, relative to the origin. */
+  modelsPath: string;
+  /** false = the API sends no CORS headers, so the browser needs the same-origin proxy. */
+  corsOk: boolean;
+  /** Does listing models require the key? */
+  listNeedsKey: boolean;
   headers: (key: string) => Record<string, string>;
   body: (system: string, messages: ChatMessage[], model: string) => unknown;
   parse: (json: unknown) => string;
+  parseModels: (json: unknown) => ModelInfo[];
 }
+
+/**
+ * Providers that refuse cross-origin browser calls (NVIDIA's integrate API sends
+ * no Access-Control-Allow-Origin at all) are routed through a same-origin path
+ * that the dev server and Netlify both proxy upstream. Nothing is stored there —
+ * it is a pure pass-through, so the key still only ever leaves this browser.
+ */
+export const PROXY_PREFIX: Partial<Record<ProviderId, string>> = {
+  nvidia: "/api-proxy/nvidia",
+};
+
+export function apiBase(p: ProviderConfig): string {
+  const prefix = PROXY_PREFIX[p.id];
+  if (
+    !p.corsOk &&
+    prefix &&
+    typeof window !== "undefined" &&
+    /^https?:$/.test(window.location.protocol)
+  )
+    return window.location.origin + prefix;
+  return p.origin;
+}
+
+const NON_CHAT =
+  /embed|embedding|rerank|whisper|tts|audio|speech|moderation|dall-e|image|vision-ocr|guard|safety|clip|nemoretriever|video|diffusion|flux|stable-|sana|sdxl|riva|parakeet|codestral-embed|ocr/i;
+
+export function isChatModelId(id: string): boolean {
+  return !NON_CHAT.test(id);
+}
+
 
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 
