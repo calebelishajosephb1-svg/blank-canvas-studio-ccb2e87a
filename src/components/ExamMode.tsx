@@ -273,7 +273,7 @@ export function ExamMode({ pool, onClose }: { pool: Challenge[]; onClose: () => 
               </div>
               <h2 className="mt-1 text-xl">Report card</h2>
               <p className="mt-1 text-sm" style={{ color: "var(--ink-muted)" }}>
-                {report.score} / {report.total} correct in {Math.round(report.durationS / 60)} min
+                {report.score} / {report.total} correct in {Math.max(1, Math.round(report.durationS / 60))} min
                 across {report.languages.length} languages.
               </p>
             </div>
