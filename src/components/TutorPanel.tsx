@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  RefreshCw,
   Send,
   Settings2,
   Volume2,
@@ -15,11 +16,13 @@ import {
 } from "lucide-react";
 import {
   askTutor,
+  listModels,
   loadSettings,
   saveSettings,
   PROVIDERS,
   PROVIDER_LIST,
   type ChatMessage,
+  type ModelInfo,
   type ProviderId,
   type TutorSettings,
 } from "@/lib/tutor/byok";
@@ -220,6 +223,12 @@ export function TutorPanel({
   const [settings, setSettings] = useState<TutorSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  /** Live model catalog, fetched from whichever provider the student picked. */
+  const [catalog, setCatalog] = useState<ModelInfo[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [freeOnly, setFreeOnly] = useState(false);
+  const [modelFilter, setModelFilter] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: GREETING },
   ]);
@@ -285,6 +294,55 @@ export function TutorPanel({
     setSettings(merged);
     saveSettings(merged);
   }
+
+  /** Ask the provider itself what it can run — no hardcoded menu. */
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const refreshModels = useRef(async () => {});
+  useEffect(() => {
+    refreshModels.current = async () => {
+      setLoadingModels(true);
+      setCatalogError(null);
+      const res = await listModels(settings.provider, settings.apiKey);
+      if (!alive.current) return;
+      setLoadingModels(false);
+      if (!res.ok) {
+        setCatalog([]);
+        setCatalogError(res.error);
+        return;
+      }
+      setCatalog(res.models);
+      if (!res.models.some((m) => m.id === settings.model) && res.models[0])
+        patch({ model: res.models[0].id });
+    };
+  });
+
+
+  // Auto-load the catalog when the panel is open and the provider/key settles.
+  useEffect(() => {
+    if (!open || !showSettings) return;
+    const p = PROVIDERS[settings.provider];
+    if (p.listNeedsKey && settings.apiKey.trim().length < 8) return;
+    const t = window.setTimeout(() => void refreshModels.current(), 600);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, showSettings, settings.provider, settings.apiKey]);
+
+  const visibleModels = useMemo(() => {
+    const q = modelFilter.trim().toLowerCase();
+    return catalog.filter(
+      (m) =>
+        (!freeOnly || m.free === true) &&
+        (!q || m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q)),
+    );
+  }, [catalog, freeOnly, modelFilter]);
+
+
 
   async function send() {
     const question = input.trim();
@@ -433,18 +491,66 @@ export function TutorPanel({
               </option>
             ))}
           </select>
-          <label className="section-label">Model</label>
+          <div className="flex items-center gap-2">
+            <label className="section-label" style={{ margin: 0 }}>
+              Model
+            </label>
+            <label
+              className="ml-auto flex items-center gap-1 text-[11px]"
+              style={{ color: "var(--ink-muted)" }}
+            >
+              <input
+                type="checkbox"
+                checked={freeOnly}
+                onChange={(e) => setFreeOnly(e.target.checked)}
+              />
+              Free only
+            </label>
+            <button
+              className="tool-btn"
+              title="Refresh model list from the provider"
+              aria-label="Refresh model list"
+              onClick={() => void refreshModels.current()}
+            >
+              <RefreshCw size={13} className={loadingModels ? "animate-spin" : undefined} />
+            </button>
+          </div>
+          <input
+            className="field-input"
+            placeholder="Filter models…"
+            value={modelFilter}
+            onChange={(e) => setModelFilter(e.target.value)}
+          />
           <select
             className="field-input"
             value={settings.model}
             onChange={(e) => patch({ model: e.target.value })}
           >
-            {provider.models.map((m) => (
-              <option key={m} value={m}>
-                {m}
+            {!visibleModels.some((m) => m.id === settings.model) && settings.model && (
+              <option value={settings.model}>{settings.model} (current)</option>
+            )}
+            {visibleModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label === m.id ? m.id : `${m.label} — ${m.id}`}
+                {m.free ? "  · free" : ""}
               </option>
             ))}
           </select>
+          <p className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
+            {loadingModels
+              ? "Fetching the live model catalog…"
+              : catalogError
+                ? catalogError
+                : catalog.length
+                  ? `${visibleModels.length} of ${catalog.length} chat-capable models${
+                      freeOnly ? " (free ones only)" : ""
+                    }.`
+                  : "Paste your key to load this provider's live model list."}
+            {freeOnly && catalog.length > 0 && !catalog.some((m) => m.free) && (
+              <> This provider publishes no pricing, so nothing can be proven free.</>
+            )}
+          </p>
+
           <label className="section-label">API key</label>
           <div className="flex gap-1">
             <input

@@ -14,17 +14,66 @@ export interface ChatMessage {
   content: string;
 }
 
+/** One selectable model, as discovered live from the provider's own catalog. */
+export interface ModelInfo {
+  id: string;
+  label: string;
+  /** true = provably free, false = provably paid, undefined = provider publishes no pricing. */
+  free?: boolean;
+}
+
 export interface ProviderConfig {
   id: ProviderId;
   label: string;
   keyPlaceholder: string;
   keysUrl: string;
+  /** Last-resort seeds used only if the live catalog cannot be fetched. */
   models: string[];
-  endpoint: string;
+  /** Real API origin. */
+  origin: string;
+  /** Path of the chat/completions endpoint, relative to the origin. */
+  chatPath: string;
+  /** Path of the model-catalog endpoint, relative to the origin. */
+  modelsPath: string;
+  /** false = the API sends no CORS headers, so the browser needs the same-origin proxy. */
+  corsOk: boolean;
+  /** Does listing models require the key? */
+  listNeedsKey: boolean;
   headers: (key: string) => Record<string, string>;
   body: (system: string, messages: ChatMessage[], model: string) => unknown;
   parse: (json: unknown) => string;
+  parseModels: (json: unknown) => ModelInfo[];
 }
+
+/**
+ * Providers that refuse cross-origin browser calls (NVIDIA's integrate API sends
+ * no Access-Control-Allow-Origin at all) are routed through a same-origin path
+ * that the dev server and Netlify both proxy upstream. Nothing is stored there —
+ * it is a pure pass-through, so the key still only ever leaves this browser.
+ */
+export const PROXY_PREFIX: Partial<Record<ProviderId, string>> = {
+  nvidia: "/api-proxy/nvidia",
+};
+
+export function apiBase(p: ProviderConfig): string {
+  const prefix = PROXY_PREFIX[p.id];
+  if (
+    !p.corsOk &&
+    prefix &&
+    typeof window !== "undefined" &&
+    /^https?:$/.test(window.location.protocol)
+  )
+    return window.location.origin + prefix;
+  return p.origin;
+}
+
+const NON_CHAT =
+  /embed|embedding|rerank|whisper|tts|audio|speech|moderation|dall-e|image|vision-ocr|guard|safety|clip|nemoretriever|video|diffusion|flux|stable-|sana|sdxl|riva|parakeet|codestral-embed|ocr/i;
+
+export function isChatModelId(id: string): boolean {
+  return !NON_CHAT.test(id);
+}
+
 
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 
@@ -35,7 +84,16 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-ant-...",
     keysUrl: "https://console.anthropic.com/settings/keys",
     models: ["claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5"],
-    endpoint: "https://api.anthropic.com/v1/messages",
+    origin: "https://api.anthropic.com",
+    chatPath: "/v1/messages",
+    modelsPath: "/v1/models?limit=200",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string; display_name?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.display_name || m.id || "" }))
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({
       "content-type": "application/json",
       "x-api-key": key,
@@ -59,7 +117,16 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-...",
     keysUrl: "https://platform.openai.com/api-keys",
     models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"],
-    endpoint: "https://api.openai.com/v1/chat/completions",
+    origin: "https://api.openai.com",
+    chatPath: "/v1/chat/completions",
+    modelsPath: "/v1/models",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.id ?? "" }))
+        .filter((m) => m.id && isChatModelId(m.id) && /^(gpt|o\d|chatgpt)/i.test(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
@@ -83,7 +150,17 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
       "deepseek-ai/deepseek-r1",
       "mistralai/mistral-large-2-instruct",
     ],
-    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    origin: "https://integrate.api.nvidia.com",
+    chatPath: "/v1/chat/completions",
+    modelsPath: "/v1/models",
+    // NVIDIA's integrate API sends no CORS headers — browser calls go via the proxy path.
+    corsOk: false,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.id ?? "", free: true }))
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
@@ -102,7 +179,25 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-or-...",
     keysUrl: "https://openrouter.ai/keys",
     models: ["anthropic/claude-sonnet-4.5", "openai/gpt-4.1-mini", "google/gemini-2.5-flash"],
-    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    origin: "https://openrouter.ai",
+    chatPath: "/api/v1/chat/completions",
+    modelsPath: "/api/v1/models",
+    corsOk: true,
+    listNeedsKey: false,
+    parseModels: (json) =>
+      (
+        (json as { data?: { id?: string; name?: string; pricing?: Record<string, string> }[] })
+          .data ?? []
+      )
+        .map((m) => {
+          const id = m.id ?? "";
+          const p = m.pricing ?? {};
+          const nums = ["prompt", "completion", "request"].map((k) => Number(p[k] ?? 0));
+          const free = nums.every((n) => Number.isFinite(n) && n === 0);
+          return { id, label: m.name || id, free };
+        })
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
@@ -120,7 +215,20 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "AIza...",
     keysUrl: "https://aistudio.google.com/app/apikey",
     models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
-    endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+    origin: "https://generativelanguage.googleapis.com",
+    chatPath: "/v1beta/models",
+    modelsPath: "/v1beta/models?pageSize=1000",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { models?: { name?: string; displayName?: string; supportedGenerationMethods?: string[] }[] }).models ?? [])
+        .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
+        .map((m) => {
+          const id = (m.name ?? "").replace(/^models\//, "");
+          return { id, label: m.displayName || id };
+        })
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", "x-goog-api-key": key }),
     body: (system, messages) => ({
       systemInstruction: { parts: [{ text: system }] },
@@ -263,8 +371,9 @@ export async function askTutor(
   }
   const p = PROVIDERS[settings.provider];
   const model = settings.model || p.models[0]!;
-  const url =
-    p.id === "google" ? `${p.endpoint}/${encodeURIComponent(model)}:generateContent` : p.endpoint;
+  const chat = apiBase(p) + p.chatPath;
+  const url = p.id === "google" ? `${chat}/${encodeURIComponent(model)}:generateContent` : chat;
+
 
   try {
     const res = await fetch(url, {
@@ -296,6 +405,49 @@ export async function askTutor(
     return {
       ok: false,
       error: `Could not reach ${p.label} from the browser. Check your connection or CORS settings for this key.`,
+    };
+  }
+}
+
+/**
+ * Live model catalog.
+ *
+ * Nothing is hardcoded: we ask the provider itself which models exist, keep the
+ * ones that can hold a chat, and tag the ones the provider publishes as free.
+ * Same-origin proxy is used for providers that block browser CORS.
+ */
+export type ModelsResult =
+  | { ok: true; models: ModelInfo[] }
+  | { ok: false; error: string };
+
+export async function listModels(
+  provider: ProviderId,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<ModelsResult> {
+  const p = PROVIDERS[provider];
+  const key = apiKey.trim();
+  if (p.listNeedsKey && !key)
+    return { ok: false, error: "Paste your key first — the model list comes from your account." };
+  try {
+    const res = await fetch(apiBase(p) + p.modelsPath, {
+      method: "GET",
+      headers: p.headers(key),
+      ...(signal ? { signal } : {}),
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403)
+        return { ok: false, error: `${p.label} rejected the key (${res.status}).` };
+      return { ok: false, error: `${p.label} returned ${res.status} while listing models.` };
+    }
+    const models = p.parseModels(await res.json()).sort((a, b) => a.id.localeCompare(b.id));
+    if (!models.length) return { ok: false, error: "No chat-capable models came back." };
+    return { ok: true, models };
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") return { ok: false, error: "Cancelled." };
+    return {
+      ok: false,
+      error: `Could not reach ${p.label} from the browser (network or CORS).`,
     };
   }
 }
