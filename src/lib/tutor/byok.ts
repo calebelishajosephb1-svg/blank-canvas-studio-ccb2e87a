@@ -74,7 +74,6 @@ export function isChatModelId(id: string): boolean {
   return !NON_CHAT.test(id);
 }
 
-
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 
 export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
@@ -221,7 +220,17 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     corsOk: true,
     listNeedsKey: true,
     parseModels: (json) =>
-      ((json as { models?: { name?: string; displayName?: string; supportedGenerationMethods?: string[] }[] }).models ?? [])
+      (
+        (
+          json as {
+            models?: {
+              name?: string;
+              displayName?: string;
+              supportedGenerationMethods?: string[];
+            }[];
+          }
+        ).models ?? []
+      )
         .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
         .map((m) => {
           const id = (m.name ?? "").replace(/^models\//, "");
@@ -374,7 +383,6 @@ export async function askTutor(
   const chat = apiBase(p) + p.chatPath;
   const url = p.id === "google" ? `${chat}/${encodeURIComponent(model)}:generateContent` : chat;
 
-
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -416,9 +424,7 @@ export async function askTutor(
  * ones that can hold a chat, and tag the ones the provider publishes as free.
  * Same-origin proxy is used for providers that block browser CORS.
  */
-export type ModelsResult =
-  | { ok: true; models: ModelInfo[] }
-  | { ok: false; error: string };
+export type ModelsResult = { ok: true; models: ModelInfo[] } | { ok: false; error: string };
 
 export async function listModels(
   provider: ProviderId,

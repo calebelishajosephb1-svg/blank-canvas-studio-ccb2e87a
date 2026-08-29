@@ -322,7 +322,6 @@ export function TutorPanel({
     };
   });
 
-
   // Auto-load the catalog when the panel is open and the provider/key settles.
   useEffect(() => {
     if (!open || !showSettings) return;
@@ -330,7 +329,6 @@ export function TutorPanel({
     if (p.listNeedsKey && settings.apiKey.trim().length < 8) return;
     const t = window.setTimeout(() => void refreshModels.current(), 600);
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, showSettings, settings.provider, settings.apiKey]);
 
   const visibleModels = useMemo(() => {
@@ -341,8 +339,6 @@ export function TutorPanel({
         (!q || m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q)),
     );
   }, [catalog, freeOnly, modelFilter]);
-
-
 
   async function send() {
     const question = input.trim();
