@@ -15,6 +15,14 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# CORS pass-through for providers that refuse cross-origin browser calls
+# (NVIDIA's integrate API). Must come before the SPA fallback.
+[[redirects]]
+  from = "/api-proxy/nvidia/*"
+  to = "https://integrate.api.nvidia.com/:splat"
+  status = 200
+  force = true
+
 # SPA fallback: TanStack Router owns routing on the client, so every path must
 # be served the same shell HTML with a 200 (not a redirect, not a 404).
 [[redirects]]
