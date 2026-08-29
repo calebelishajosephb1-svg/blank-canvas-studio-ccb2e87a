@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Share2, Timer, Wrench } from "lucide-react";
+import { GraduationCap, PackageOpen, Share2, Timer, Wrench } from "lucide-react";
 import { DFACanvas, type CanvasMode, type HighlightTone } from "@/components/DFACanvas";
 import { CanvasToolbar } from "@/components/CanvasToolbar";
 import { ChallengePicker } from "@/components/ChallengePicker";
 import { TimedPractice } from "@/components/TimedPractice";
 import { ChallengeCreator } from "@/components/ChallengeCreator";
+import { ExchangeMenu } from "@/components/ExchangeMenu";
+import { ExamMode } from "@/components/ExamMode";
+import {
+  buildPack,
+  hydratePackChallenge,
+  loadPackFromLocation,
+  packUrl,
+  parsePack,
+} from "@/lib/packs";
+import { downloadText } from "@/lib/exchange";
 import { FIXED_CHALLENGES, challengeGenerator, type Challenge } from "@/lib/engine/challenges";
 import { DFA } from "@/lib/engine/dfa";
 import { decodeShare, shareUrl } from "@/lib/share";
@@ -53,6 +63,10 @@ export function Discovery({
   const [regexErr, setRegexErr] = useState<string | null>(null);
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
+  const [examOpen, setExamOpen] = useState(false);
+  /** Alphabet of an imported machine, when it differs from the challenge's. */
+  const [alphaOverride, setAlphaOverride] = useState<string[] | null>(null);
+  const packInput = useRef<HTMLInputElement>(null);
   const { machine, commit, set, replace, undo, redo, canUndo, canRedo } =
     useMachine(starterMachine());
   const saveTimer = useRef<number | null>(null);
@@ -60,7 +74,7 @@ export function Discovery({
   const bias = useRef(0);
   const attention = useCanvasAttention(active, () => commit((m) => layoutMachine(m)));
 
-  const alphabet = challenge.alphabet;
+  const alphabet = alphaOverride ?? challenge.alphabet;
   const dfa = useMemo(() => machineToDFA(machine, alphabet), [machine, alphabet]);
   const errors = useMemo(() => validateDFA(dfa), [dfa]);
 
@@ -70,6 +84,7 @@ export function Discovery({
     (ch: Challenge, idx: number) => {
       setChallenge(ch);
       setIndex(idx);
+      setAlphaOverride(null);
       setAttempts(0);
       setHintIndex(0);
       setFeedback(null);
@@ -307,6 +322,74 @@ export function Discovery({
       .catch(() => toast("Share link is in the address bar"));
   };
 
+  // ---- assignment packs -------------------------------------------------
+  const adoptPack = useCallback(
+    (name: string, challenges: Challenge[]) => {
+      if (!challenges.length) return;
+      challenges.forEach((c) => Storage.saveToLibrary(c));
+      setExtra((prev) => [...challenges, ...prev].slice(0, 24));
+      setChallengeAndReset(challenges[0]!, 1);
+      toast.success(`Loaded pack "${name}"`, {
+        description: `${challenges.length} challenge${challenges.length === 1 ? "" : "s"} added to your library`,
+      });
+    },
+    [setChallengeAndReset],
+  );
+
+  useEffect(() => {
+    void loadPackFromLocation().then((result) => {
+      if (!result) return;
+      if (!result.ok) {
+        toast.error("Pack link failed", { description: result.error });
+        return;
+      }
+      adoptPack(result.pack.name, result.pack.challenges.map(hydratePackChallenge));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const packChallenges = () => {
+    const seen = new Map<string, Challenge>();
+    for (const c of [...Storage.getLibrary(), ...extra, challenge]) seen.set(c.id, c);
+    return [...seen.values()];
+  };
+
+  const exportPack = () => {
+    const list = packChallenges();
+    if (!list.length) {
+      toast.error("Nothing to bundle yet — save some challenges to your library first");
+      return;
+    }
+    const pack = buildPack("IALE assignment pack", list);
+    downloadText("assignment-pack.iale.json", JSON.stringify(pack, null, 2), "application/json");
+    toast.success(`Exported ${list.length} challenges as a pack`);
+  };
+
+  const copyPackLink = () => {
+    const list = packChallenges();
+    if (!list.length) {
+      toast.error("Nothing to bundle yet");
+      return;
+    }
+    const url = packUrl(buildPack("IALE assignment pack", list.slice(0, 8)));
+    void navigator.clipboard
+      ?.writeText(url)
+      .then(() =>
+        toast.success("Pack link copied", { description: "Opens straight into these challenges" }),
+      )
+      .catch(() => toast.error("Clipboard blocked — export the pack file instead"));
+  };
+
+  const importPackFile = async (file: File | null | undefined) => {
+    if (!file) return;
+    const result = parsePack(await file.text());
+    if (!result.ok) {
+      toast.error("Pack import failed", { description: result.error });
+      return;
+    }
+    adoptPack(result.pack.name, result.pack.challenges.map(hydratePackChallenge));
+  };
+
   const hints = challenge.hints ?? [
     "Think about what the machine must remember between symbols — that memory is your states.",
     "Compare two examples that differ by one symbol. Which one flips the verdict, and where?",
@@ -411,6 +494,37 @@ export function Discovery({
           )}
         </div>
 
+        <div className="lab-card">
+          <div className="section-label mb-2">Assignment packs</div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="btn-ghost inline-flex items-center gap-1.5"
+              onClick={() => packInput.current?.click()}
+            >
+              <PackageOpen size={13} /> Import pack
+            </button>
+            <button className="btn-ghost" onClick={exportPack}>
+              Export pack
+            </button>
+            <button className="btn-ghost" onClick={copyPackLink}>
+              Copy pack link
+            </button>
+          </div>
+          <p className="mt-2 text-[10px]" style={{ color: "var(--ink-disabled)" }}>
+            A pack bundles several challenges into one file, and ?pack=… links load one directly.
+          </p>
+          <input
+            ref={packInput}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              void importPackFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
         <ChallengePicker
           activeId={challenge.id}
           maskNames
@@ -457,6 +571,21 @@ export function Discovery({
           >
             <Timer size={13} /> Practice
           </button>
+          <button
+            className="btn-ghost inline-flex items-center gap-1.5"
+            title="Longer timed assessment — the tutor goes offline until it ends"
+            onClick={() => setExamOpen(true)}
+          >
+            <GraduationCap size={13} /> Exam
+          </button>
+          <ExchangeMenu
+            machine={machine}
+            name={solved ? challenge.name : "automaton"}
+            onImport={(imported, importedAlphabet) => {
+              replace(imported);
+              setAlphaOverride(importedAlphabet);
+            }}
+          />
           <button className="btn-ghost" onClick={loadRandom}>
             New challenge
           </button>
@@ -521,6 +650,12 @@ export function Discovery({
 
       {practiceOpen && (
         <TimedPractice challenge={challenge} onClose={() => setPracticeOpen(false)} />
+      )}
+      {examOpen && (
+        <ExamMode
+          pool={[...FIXED_CHALLENGES, ...extra, ...Storage.getLibrary()]}
+          onClose={() => setExamOpen(false)}
+        />
       )}
       {creatorOpen && (
         <ChallengeCreator
