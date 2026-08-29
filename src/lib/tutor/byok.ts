@@ -408,3 +408,46 @@ export async function askTutor(
     };
   }
 }
+
+/**
+ * Live model catalog.
+ *
+ * Nothing is hardcoded: we ask the provider itself which models exist, keep the
+ * ones that can hold a chat, and tag the ones the provider publishes as free.
+ * Same-origin proxy is used for providers that block browser CORS.
+ */
+export type ModelsResult =
+  | { ok: true; models: ModelInfo[] }
+  | { ok: false; error: string };
+
+export async function listModels(
+  provider: ProviderId,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<ModelsResult> {
+  const p = PROVIDERS[provider];
+  const key = apiKey.trim();
+  if (p.listNeedsKey && !key)
+    return { ok: false, error: "Paste your key first — the model list comes from your account." };
+  try {
+    const res = await fetch(apiBase(p) + p.modelsPath, {
+      method: "GET",
+      headers: p.headers(key),
+      ...(signal ? { signal } : {}),
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403)
+        return { ok: false, error: `${p.label} rejected the key (${res.status}).` };
+      return { ok: false, error: `${p.label} returned ${res.status} while listing models.` };
+    }
+    const models = p.parseModels(await res.json()).sort((a, b) => a.id.localeCompare(b.id));
+    if (!models.length) return { ok: false, error: "No chat-capable models came back." };
+    return { ok: true, models };
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") return { ok: false, error: "Cancelled." };
+    return {
+      ok: false,
+      error: `Could not reach ${p.label} from the browser (network or CORS).`,
+    };
+  }
+}
