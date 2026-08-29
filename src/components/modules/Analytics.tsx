@@ -3,6 +3,7 @@ import { FIXED_CHALLENGES } from "@/lib/engine/challenges";
 import { detectMisconceptions } from "@/lib/engine/algorithms";
 import { Storage } from "@/lib/storage";
 import { buildRecommendations } from "@/lib/engine/recommendations";
+import { buildQueue, dueCards } from "@/lib/engine/spaced";
 import { buildAnalyticsContext } from "@/lib/tutor/context";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -38,6 +39,8 @@ export function Analytics({
   const max = Math.max(1, ...mistakes.map((m) => m.count));
   const recs = buildRecommendations(3);
   const misconceptions = detectMisconceptions(Storage.getAllMistakes());
+  const queue = buildQueue();
+  const due = dueCards();
 
   useEffect(() => {
     onContext(() =>
@@ -142,6 +145,47 @@ export function Analytics({
             ))}
           </div>
         </div>
+
+        {!!queue.length && (
+          <div className="lab-card mt-4">
+            <div className="section-label mb-3">
+              Due for review {due.length ? `(${due.length})` : ""}
+            </div>
+            <div className="flex flex-col gap-2">
+              {queue.map((c) => {
+                const isDue = c.dueAt <= Date.now();
+                return (
+                  <div key={c.category} className="flex flex-wrap items-center gap-2">
+                    <span className="badge" data-tone={isDue ? "amber" : "blue"}>
+                      {isDue
+                        ? c.overdueDays <= 0
+                          ? "today"
+                          : `${c.overdueDays}d overdue`
+                        : `in ${Math.max(1, Math.ceil((c.dueAt - Date.now()) / 86400000))}d`}
+                    </span>
+                    <span className="text-xs">{c.label}</span>
+                    <span className="text-[11px]" style={{ color: "var(--ink-disabled)" }}>
+                      box {c.box + 1} · {c.mistakeCount} mistakes
+                    </span>
+                    <button
+                      className="btn-ghost ml-auto text-xs"
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent("iale-load-challenge", {
+                            detail: { id: c.challenge.id, category: c.category },
+                          }),
+                        );
+                        onGoto("debugger");
+                      }}
+                    >
+                      Drill now →
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {!!misconceptions.length && (
           <div className="lab-card mt-4">

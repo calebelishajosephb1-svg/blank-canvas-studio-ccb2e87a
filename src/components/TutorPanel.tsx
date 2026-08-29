@@ -553,7 +553,9 @@ export function TutorPanel({
                 style={{ display: "block", width: "100%" }}
                 onClick={() => {
                   window.dispatchEvent(
-                    new CustomEvent("iale-load-challenge", { detail: { id: r.challenge.id } }),
+                    new CustomEvent("iale-load-challenge", {
+                      detail: { id: r.challenge.id, category: r.category },
+                    }),
                   );
                   window.dispatchEvent(
                     new CustomEvent("iale-tutor-action", {
