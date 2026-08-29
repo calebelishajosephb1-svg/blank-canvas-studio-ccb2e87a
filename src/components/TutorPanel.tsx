@@ -296,21 +296,32 @@ export function TutorPanel({
   }
 
   /** Ask the provider itself what it can run — no hardcoded menu. */
-  const refreshModels = useRef(async (_force = false) => {});
-  refreshModels.current = async () => {
-    setLoadingModels(true);
-    setCatalogError(null);
-    const res = await listModels(settings.provider, settings.apiKey);
-    setLoadingModels(false);
-    if (!res.ok) {
-      setCatalog([]);
-      setCatalogError(res.error);
-      return;
-    }
-    setCatalog(res.models);
-    if (!res.models.some((m) => m.id === settings.model) && res.models[0])
-      patch({ model: res.models[0].id });
-  };
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const refreshModels = useRef(async () => {});
+  useEffect(() => {
+    refreshModels.current = async () => {
+      setLoadingModels(true);
+      setCatalogError(null);
+      const res = await listModels(settings.provider, settings.apiKey);
+      if (!alive.current) return;
+      setLoadingModels(false);
+      if (!res.ok) {
+        setCatalog([]);
+        setCatalogError(res.error);
+        return;
+      }
+      setCatalog(res.models);
+      if (!res.models.some((m) => m.id === settings.model) && res.models[0])
+        patch({ model: res.models[0].id });
+    };
+  });
+
 
   // Auto-load the catalog when the panel is open and the provider/key settles.
   useEffect(() => {
