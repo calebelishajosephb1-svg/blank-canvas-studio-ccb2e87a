@@ -16,13 +16,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // production) forwards the request upstream; the student's key is only relayed,
 // never stored or logged.
 export default defineConfig({
-  server: {
-    proxy: {
-      "/api-proxy/nvidia": {
-        target: "https://integrate.api.nvidia.com",
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path: string) => path.replace(/^\/api-proxy\/nvidia/, ""),
+  vite: {
+    server: {
+      proxy: {
+        "/api-proxy/nvidia": {
+          target: "https://integrate.api.nvidia.com",
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path: string) => path.replace(/^\/api-proxy\/nvidia/, ""),
+        },
       },
     },
   },
