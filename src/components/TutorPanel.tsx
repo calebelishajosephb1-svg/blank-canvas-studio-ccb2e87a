@@ -553,7 +553,9 @@ export function TutorPanel({
                 style={{ display: "block", width: "100%" }}
                 onClick={() => {
                   window.dispatchEvent(
-                    new CustomEvent("iale-load-challenge", { detail: { id: r.challenge.id } }),
+                    new CustomEvent("iale-load-challenge", {
+                      detail: { id: r.challenge.id, category: r.category },
+                    }),
                   );
                   window.dispatchEvent(
                     new CustomEvent("iale-tutor-action", {
@@ -577,7 +579,6 @@ export function TutorPanel({
       )}
 
       {sketch && <ScratchDiagram sketch={sketch} onClear={() => setSketch(null)} />}
-
 
       {chips.length > 0 && (
         <div className="flex flex-wrap gap-1" style={{ padding: "0 10px 8px" }}>

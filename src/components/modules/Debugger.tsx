@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DFACanvas, type CanvasMode, type HighlightTone } from "@/components/DFACanvas";
 import { useCanvasAttention } from "@/lib/tutor/useCanvasAttention";
@@ -23,6 +23,7 @@ import {
 import { useCanvasShortcuts } from "@/lib/useCanvasShortcuts";
 import { buildDebuggerContext } from "@/lib/tutor/context";
 import type { TutorAction } from "@/lib/tutor/actions";
+import { reviewCard } from "@/lib/engine/spaced";
 
 export function Debugger({
   active,
@@ -32,6 +33,8 @@ export function Debugger({
   onContext: (ctx: () => string) => void;
 }) {
   const [challenge, setChallenge] = useState<Challenge>(FIXED_CHALLENGES[2]!);
+  /** Misconception category this challenge was loaded to drill, if any. */
+  const drillCategory = useRef<string | null>(null);
   const [mode, setMode] = useState<CanvasMode>("pointer");
   const [ce, setCe] = useState<Counterexample | null>(null);
   const [hint, setHint] = useState<TraceHint | null>(null);
@@ -96,6 +99,10 @@ export function Debugger({
       setCe(null);
       setHint(null);
       Storage.recordSolve("debugger", challenge.id, 1);
+      if (drillCategory.current) {
+        reviewCard(drillCategory.current);
+        drillCategory.current = null;
+      }
       setResult({
         tone: "accept",
         title: "No counterexample exists",
@@ -171,9 +178,10 @@ export function Debugger({
     };
     // A recommendation card in the tutor chat asks the Debugger to open a drill.
     const onLoad = (e: Event) => {
-      const id = (e as CustomEvent<{ id: string }>).detail?.id;
-      const ch = FIXED_CHALLENGES.find((c) => c.id === id);
+      const detail = (e as CustomEvent<{ id: string; category?: string }>).detail;
+      const ch = FIXED_CHALLENGES.find((c) => c.id === detail?.id);
       if (ch) {
+        drillCategory.current = detail?.category ?? null;
         load(ch);
         toast(`Loaded drill: ${ch.name}`);
       }
