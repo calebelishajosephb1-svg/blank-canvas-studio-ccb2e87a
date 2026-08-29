@@ -84,7 +84,16 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-ant-...",
     keysUrl: "https://console.anthropic.com/settings/keys",
     models: ["claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5"],
-    endpoint: "https://api.anthropic.com/v1/messages",
+    origin: "https://api.anthropic.com",
+    chatPath: "/v1/messages",
+    modelsPath: "/v1/models?limit=200",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string; display_name?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.display_name || m.id || "" }))
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({
       "content-type": "application/json",
       "x-api-key": key,
