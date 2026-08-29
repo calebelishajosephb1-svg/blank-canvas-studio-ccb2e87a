@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  RefreshCw,
   Send,
   Settings2,
   Volume2,
@@ -15,11 +16,13 @@ import {
 } from "lucide-react";
 import {
   askTutor,
+  listModels,
   loadSettings,
   saveSettings,
   PROVIDERS,
   PROVIDER_LIST,
   type ChatMessage,
+  type ModelInfo,
   type ProviderId,
   type TutorSettings,
 } from "@/lib/tutor/byok";
@@ -220,6 +223,12 @@ export function TutorPanel({
   const [settings, setSettings] = useState<TutorSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  /** Live model catalog, fetched from whichever provider the student picked. */
+  const [catalog, setCatalog] = useState<ModelInfo[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [freeOnly, setFreeOnly] = useState(false);
+  const [modelFilter, setModelFilter] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: GREETING },
   ]);
