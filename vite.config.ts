@@ -40,7 +40,7 @@ function nvidiaCorsProxy(): Plugin {
             if (typeof v === "string" && !/^(host|origin|referer|connection)$/i.test(k))
               headers[k] = v;
           fetch(upstream, {
-            method: req.method,
+            method: req.method ?? "GET",
             headers,
             ...(chunks.length ? { body: Buffer.concat(chunks) } : {}),
           })
