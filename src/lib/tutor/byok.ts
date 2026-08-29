@@ -108,7 +108,16 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-...",
     keysUrl: "https://platform.openai.com/api-keys",
     models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"],
-    endpoint: "https://api.openai.com/v1/chat/completions",
+    origin: "https://api.openai.com",
+    chatPath: "/v1/chat/completions",
+    modelsPath: "/v1/models",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.id ?? "" }))
+        .filter((m) => m.id && isChatModelId(m.id) && /^(gpt|o\d|chatgpt)/i.test(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
