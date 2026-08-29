@@ -132,7 +132,17 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
       "deepseek-ai/deepseek-r1",
       "mistralai/mistral-large-2-instruct",
     ],
-    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    origin: "https://integrate.api.nvidia.com",
+    chatPath: "/v1/chat/completions",
+    modelsPath: "/v1/models",
+    // NVIDIA's integrate API sends no CORS headers — browser calls go via the proxy path.
+    corsOk: false,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { data?: { id?: string }[] }).data ?? [])
+        .map((m) => ({ id: m.id ?? "", label: m.id ?? "", free: true }))
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
