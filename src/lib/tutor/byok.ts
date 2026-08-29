@@ -169,7 +169,20 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "AIza...",
     keysUrl: "https://aistudio.google.com/app/apikey",
     models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
-    endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+    origin: "https://generativelanguage.googleapis.com",
+    chatPath: "/v1beta/models",
+    modelsPath: "/v1beta/models?pageSize=1000",
+    corsOk: true,
+    listNeedsKey: true,
+    parseModels: (json) =>
+      ((json as { models?: { name?: string; displayName?: string; supportedGenerationMethods?: string[] }[] }).models ?? [])
+        .filter((m) => (m.supportedGenerationMethods ?? []).includes("generateContent"))
+        .map((m) => {
+          const id = (m.name ?? "").replace(/^models\//, "");
+          return { id, label: m.displayName || id };
+        })
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", "x-goog-api-key": key }),
     body: (system, messages) => ({
       systemInstruction: { parts: [{ text: system }] },
