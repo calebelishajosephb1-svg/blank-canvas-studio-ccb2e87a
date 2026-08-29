@@ -499,7 +499,7 @@ export function TutorPanel({
               className="tool-btn"
               title="Refresh model list from the provider"
               aria-label="Refresh model list"
-              onClick={() => void refreshModels()}
+              onClick={() => void refreshModels.current()}
             >
               <RefreshCw size={13} className={loadingModels ? "animate-spin" : undefined} />
             </button>
