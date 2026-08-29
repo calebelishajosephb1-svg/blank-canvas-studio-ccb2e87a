@@ -144,8 +144,8 @@ function Index() {
   return (
     <div className="lab-shell">
       <header className="app-header">
-        <span className="brand flex items-center gap-2">
-          <img src="/app_logo.png" alt="" className="h-6 w-auto object-contain" />
+        <span className="brand">
+          <span className="brand-dot" />
           IALE
         </span>
         <nav className="flex flex-wrap items-center gap-1">
