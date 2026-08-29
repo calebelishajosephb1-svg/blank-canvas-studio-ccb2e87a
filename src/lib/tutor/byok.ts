@@ -371,8 +371,9 @@ export async function askTutor(
   }
   const p = PROVIDERS[settings.provider];
   const model = settings.model || p.models[0]!;
-  const url =
-    p.id === "google" ? `${p.endpoint}/${encodeURIComponent(model)}:generateContent` : p.endpoint;
+  const chat = apiBase(p) + p.chatPath;
+  const url = p.id === "google" ? `${chat}/${encodeURIComponent(model)}:generateContent` : chat;
+
 
   try {
     const res = await fetch(url, {
