@@ -115,27 +115,17 @@ export function MinimizeLab({ active, onContext }: Props) {
   const savings = dfa.reachableStates().size - minimal.states.length;
 
   useEffect(() => {
-    onContext?.(
-      () =>
-        [
-          "Module: Minimizer (Myhill–Nerode). The student's machine and every revealed refinement round are fully PUBLIC — discuss them freely.",
-          `Machine: ${dfa.states.length} states, alphabet {${preset.alphabet.join(",")}}.`,
-          `Refinement rounds available: ${rounds.length}. Revealed through round ${round}.`,
-          `Partition shown now: ${(currentRound?.groups ?? []).map((g) => `{${g.join(",")}}`).join(" ")}`,
-          `Distinguishability table opened: ${showTable}. Minimal result revealed: ${showResult}.`,
-          "Sequencing rule: never state the outcome of a refinement round the student has not revealed yet, and never name the minimal state count before they reveal the result — ask them to find a distinguishing suffix themselves first.",
-        ].join("\n"),
+    onContext?.(() =>
+      [
+        "Module: Minimizer (Myhill–Nerode). The student's machine and every revealed refinement round are fully PUBLIC — discuss them freely.",
+        `Machine: ${dfa.states.length} states, alphabet {${preset.alphabet.join(",")}}.`,
+        `Refinement rounds available: ${rounds.length}. Revealed through round ${round}.`,
+        `Partition shown now: ${(currentRound?.groups ?? []).map((g) => `{${g.join(",")}}`).join(" ")}`,
+        `Distinguishability table opened: ${showTable}. Minimal result revealed: ${showResult}.`,
+        "Sequencing rule: never state the outcome of a refinement round the student has not revealed yet, and never name the minimal state count before they reveal the result — ask them to find a distinguishing suffix themselves first.",
+      ].join("\n"),
     );
-  }, [
-    onContext,
-    dfa,
-    preset.alphabet,
-    rounds.length,
-    round,
-    currentRound,
-    showTable,
-    showResult,
-  ]);
+  }, [onContext, dfa, preset.alphabet, rounds.length, round, currentRound, showTable, showResult]);
 
   const pairCell = selectedPair ? table.cells.get(cellKey(selectedPair.a, selectedPair.b)) : null;
 

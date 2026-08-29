@@ -45,31 +45,24 @@ export function CompareLab({ active, onContext }: Props) {
   const dfaB = useMemo(() => machineToDFA(b.machine, ALPHABET), [b.machine]);
 
   const activeOp: ProductOp = tool === "equivalence" ? "symmetric" : op;
-  const product = useMemo(
-    () => productConstruction(dfaA, dfaB, activeOp),
-    [dfaA, dfaB, activeOp],
-  );
-  const productMachine = useMemo(
-    () => layoutMachine(dfaToMachine(product.dfa)),
-    [product],
-  );
+  const product = useMemo(() => productConstruction(dfaA, dfaB, activeOp), [dfaA, dfaB, activeOp]);
+  const productMachine = useMemo(() => layoutMachine(dfaToMachine(product.dfa)), [product]);
   const counterexample = useMemo(() => findCounterexample(dfaA, dfaB), [dfaA, dfaB]);
   const samples = useMemo(() => product.dfa.sampleStrings({ maxLen: 6, count: 4 }), [product]);
 
   useEffect(() => setChecked(false), [dfaA, dfaB]);
 
   useEffect(() => {
-    onContext?.(
-      () =>
-        [
-          `Module: Compare (${tool === "product" ? `product construction, operation ${OP_LABEL[op]}` : "equivalence checker"}). Both machines are fully PUBLIC — describe them freely.`,
-          `Machine A: ${dfaA.states.length} states, accepting [${dfaA.acceptStates.join(",")}].`,
-          `Machine B: ${dfaB.states.length} states, accepting [${dfaB.acceptStates.join(",")}].`,
-          tool === "product"
-            ? `Product graph currently drawn: ${product.dfa.states.length} pair-states, ${product.dfa.acceptStates.length} accepting.`
-            : `Student has run the equivalence check: ${checked}.`,
-          "Sequencing rule: if the student has NOT run the equivalence check yet, do not state whether the machines agree and do not name the distinguishing string — ask them to predict a string that might separate the two and test it.",
-        ].join("\n"),
+    onContext?.(() =>
+      [
+        `Module: Compare (${tool === "product" ? `product construction, operation ${OP_LABEL[op]}` : "equivalence checker"}). Both machines are fully PUBLIC — describe them freely.`,
+        `Machine A: ${dfaA.states.length} states, accepting [${dfaA.acceptStates.join(",")}].`,
+        `Machine B: ${dfaB.states.length} states, accepting [${dfaB.acceptStates.join(",")}].`,
+        tool === "product"
+          ? `Product graph currently drawn: ${product.dfa.states.length} pair-states, ${product.dfa.acceptStates.length} accepting.`
+          : `Student has run the equivalence check: ${checked}.`,
+        "Sequencing rule: if the student has NOT run the equivalence check yet, do not state whether the machines agree and do not name the distinguishing string — ask them to predict a string that might separate the two and test it.",
+      ].join("\n"),
     );
   }, [onContext, tool, op, dfaA, dfaB, product, checked]);
 
@@ -153,7 +146,9 @@ export function CompareLab({ active, onContext }: Props) {
               <div className="mt-1 flex max-h-56 flex-col gap-0.5 overflow-y-auto text-[11px]">
                 {product.pairs.map((pair) => (
                   <div key={pair.label} style={{ fontFamily: "var(--font-mono-family)" }}>
-                    <span style={{ color: pair.accepting ? "var(--signal-cyan)" : "var(--ink-muted)" }}>
+                    <span
+                      style={{ color: pair.accepting ? "var(--signal-cyan)" : "var(--ink-muted)" }}
+                    >
                       ({pair.left}, {pair.right})
                     </span>{" "}
                     <span style={{ color: "var(--ink-disabled)" }}>
@@ -188,11 +183,13 @@ export function CompareLab({ active, onContext }: Props) {
                       not equivalent
                     </span>
                     <p className="mt-2">
-                      Shortest distinguishing string:{" "}
-                      <code>{counterexample.string || "ε"}</code> — A{" "}
-                      {counterexample.expected}s it, B {counterexample.got}s it.
+                      Shortest distinguishing string: <code>{counterexample.string || "ε"}</code> —
+                      A {counterexample.expected}s it, B {counterexample.got}s it.
                     </p>
-                    <button className="btn-ghost mt-2" onClick={() => setProbe(counterexample.string)}>
+                    <button
+                      className="btn-ghost mt-2"
+                      onClick={() => setProbe(counterexample.string)}
+                    >
                       Load it into the probe
                     </button>
                   </>

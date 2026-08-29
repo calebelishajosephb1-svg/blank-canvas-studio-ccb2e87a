@@ -580,7 +580,6 @@ export function TutorPanel({
 
       {sketch && <ScratchDiagram sketch={sketch} onClear={() => setSketch(null)} />}
 
-
       {chips.length > 0 && (
         <div className="flex flex-wrap gap-1" style={{ padding: "0 10px 8px" }}>
           {chips.map((c) => (

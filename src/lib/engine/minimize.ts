@@ -132,9 +132,7 @@ export function myhillNerodeTable(input: DFA): {
   for (const s of states) {
     if (classOf.has(s)) continue;
     const idx = classes.length;
-    const members = states.filter(
-      (t) => t === s || cells.get(pk(s, t))?.distinguishable === false,
-    );
+    const members = states.filter((t) => t === s || cells.get(pk(s, t))?.distinguishable === false);
     members.forEach((m) => classOf.set(m, idx));
     classes.push(members);
   }

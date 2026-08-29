@@ -77,7 +77,7 @@ export function PumpingGame({ onContext }: Props) {
     log(`You: i = ${i} → "${v.pumped || "ε"}" ${v.inLanguage ? "∈ L" : "∉ L"}`);
     if (v.wins) {
       setPhase("won");
-      log("Adversary: \"…fine. That decomposition is dead. The contradiction stands.\"");
+      log('Adversary: "…fine. That decomposition is dead. The contradiction stands."');
       Storage.recordSolve("pumping", lang.id, verdicts.length + 1);
     } else {
       setNote(v.message);
@@ -98,17 +98,16 @@ export function PumpingGame({ onContext }: Props) {
   );
 
   useEffect(() => {
-    onContext?.(
-      () =>
-        [
-          `Module: Pumping-lemma game — language ${lang.name}: ${lang.formal} (this language is NOT regular; there is no automaton for it).`,
-          `Phase: ${phase}. p = ${p || "not chosen"}. Student's s = "${candidate || "none"}".`,
-          split
-            ? `Adversary decomposition on the board: ${splitLabel(split)}.`
-            : "No decomposition on the board yet.",
-          `Exponents tried: ${verdicts.map((v) => `"${v.pumped}" ${v.inLanguage ? "in L" : "not in L"}`).join("; ") || "none"}.`,
-          "HARD RULE for this module: never state which exponent i breaks the decomposition, and never hand the student a string s. Ask what quantity the language counts, what the constraint |xy| ≤ p forces y to consist of, and what happens to that count when y repeats.",
-        ].join("\n"),
+    onContext?.(() =>
+      [
+        `Module: Pumping-lemma game — language ${lang.name}: ${lang.formal} (this language is NOT regular; there is no automaton for it).`,
+        `Phase: ${phase}. p = ${p || "not chosen"}. Student's s = "${candidate || "none"}".`,
+        split
+          ? `Adversary decomposition on the board: ${splitLabel(split)}.`
+          : "No decomposition on the board yet.",
+        `Exponents tried: ${verdicts.map((v) => `"${v.pumped}" ${v.inLanguage ? "in L" : "not in L"}`).join("; ") || "none"}.`,
+        "HARD RULE for this module: never state which exponent i breaks the decomposition, and never hand the student a string s. Ask what quantity the language counts, what the constraint |xy| ≤ p forces y to consist of, and what happens to that count when y repeats.",
+      ].join("\n"),
     );
   }, [onContext, lang, phase, p, candidate, split, verdicts]);
 
@@ -250,7 +249,10 @@ export function PumpingGame({ onContext }: Props) {
                   <button className="btn-primary" onClick={submitExponent}>
                     Pump it
                   </button>
-                  <span className="ml-2 self-center text-[11px]" style={{ color: "var(--ink-muted)" }}>
+                  <span
+                    className="ml-2 self-center text-[11px]"
+                    style={{ color: "var(--ink-muted)" }}
+                  >
                     preview: {pump(split, Math.max(0, Number(exponent) || 0)) || "ε"}
                   </span>
                 </div>

@@ -29,7 +29,8 @@ export const PUMPING_LANGUAGES: PumpingLanguage[] = [
     name: "Equal a's then b's",
     formal: "L = { aⁿbⁿ | n ≥ 0 }",
     alphabet: ["a", "b"],
-    member: (s) => /^a*b*$/.test(s) && s.split("b")[0]!.length === s.length - s.split("b")[0]!.length,
+    member: (s) =>
+      /^a*b*$/.test(s) && s.split("b")[0]!.length === s.length - s.split("b")[0]!.length,
     intuition: "Counting an unbounded n needs unbounded memory; a DFA has finitely many states.",
     suggest: (p) => [rep("a", p) + rep("b", p), rep("a", p + 1) + rep("b", p + 1)],
   },
