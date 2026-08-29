@@ -63,9 +63,13 @@
   --font-ui-family: "Inter", system-ui, sans-serif;
   --font-mono-family: "JetBrains Mono", ui-monospace, monospace;
 
-  --app-shell: radial-gradient(1200px 600px at 70% -10%, rgba(42, 91, 218, 0.14), transparent 60%),
-    radial-gradient(900px 500px at 0% 100%, rgba(14, 165, 233, 0.08), transparent 60%), var(--bg-app);
-  --canvas-bg: radial-gradient(800px 400px at 50% 0%, rgba(42, 91, 218, 0.1), transparent 70%), var(--bg-canvas);
+  --app-shell:
+    radial-gradient(1200px 600px at 70% -10%, rgba(42, 91, 218, 0.14), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(14, 165, 233, 0.08), transparent 60%),
+    var(--bg-app);
+  --canvas-bg:
+    radial-gradient(800px 400px at 50% 0%, rgba(42, 91, 218, 0.1), transparent 70%),
+    var(--bg-canvas);
 }
 
 [data-theme="overcast"] {
@@ -84,8 +88,12 @@
   --signal-blue-15: rgba(29, 78, 216, 0.14);
   --signal-blue-40: rgba(29, 78, 216, 0.4);
   --overlay-scrim: rgba(15, 23, 42, 0.45);
-  --app-shell: radial-gradient(1100px 560px at 75% -10%, rgba(29, 78, 216, 0.12), transparent 60%), var(--bg-app);
-  --canvas-bg: radial-gradient(800px 400px at 50% 0%, rgba(29, 78, 216, 0.07), transparent 70%), var(--bg-canvas);
+  --app-shell:
+    radial-gradient(1100px 560px at 75% -10%, rgba(29, 78, 216, 0.12), transparent 60%),
+    var(--bg-app);
+  --canvas-bg:
+    radial-gradient(800px 400px at 50% 0%, rgba(29, 78, 216, 0.07), transparent 70%),
+    var(--bg-canvas);
 }
 
 @layer base {
@@ -131,11 +139,22 @@
 }
 
 @layer components {
+  @keyframes app-fade-in {
+    from {
+      opacity: 0;
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
   .lab-shell {
     display: flex;
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
+    animation: app-fade-in 0.4s ease-out;
   }
 
   .app-header {
@@ -194,6 +213,9 @@
     background: var(--signal-blue);
     color: var(--on-signal);
     box-shadow: 0 2px 10px rgba(42, 91, 218, 0.35);
+  }
+  .nav-tab:active {
+    transform: scale(0.96);
   }
 
   .module-container {
@@ -263,6 +285,9 @@
     border-color: transparent;
     box-shadow: 0 4px 14px rgba(42, 91, 218, 0.32);
   }
+  .tool-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
 
   .btn-primary {
     height: 34px;
@@ -273,13 +298,15 @@
     font-weight: 700;
     font-size: 12.5px;
     box-shadow: var(--shadow-glow);
-    transition: transform 0.12s ease, filter 0.15s ease;
+    transition:
+      transform 0.12s ease,
+      filter 0.15s ease;
   }
   .btn-primary:hover {
     filter: brightness(1.1);
   }
   .btn-primary:active {
-    transform: translateY(1px);
+    transform: scale(0.97) translateY(1px);
   }
 
   .btn-ghost {
@@ -299,6 +326,9 @@
   }
   .btn-ghost:disabled {
     opacity: 0.5;
+  }
+  .btn-ghost:active:not(:disabled) {
+    transform: scale(0.96);
   }
 
   /* ── AI Tutor (bring-your-own-key) ───────────────────────────── */
@@ -364,7 +394,6 @@
     border-top: 1px solid var(--border-subtle);
   }
 
-
   .field-input {
     height: 34px;
     width: 100%;
@@ -428,6 +457,16 @@
   }
 
   /* Punch-tape example rows */
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
   .tape-row {
     display: flex;
     align-items: center;
@@ -440,7 +479,10 @@
     border-radius: 0 8px 8px 0;
     font-family: var(--font-mono-family);
     font-size: 12.5px;
-    transition: background 0.15s ease, transform 0.15s ease;
+    animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      background 0.15s ease,
+      transform 0.15s ease;
   }
   .tape-row:hover {
     background: var(--signal-blue-10);

@@ -83,7 +83,10 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
       "deepseek-ai/deepseek-r1",
       "mistralai/mistral-large-2-instruct",
     ],
-    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    endpoint:
+      typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? "/api/nvidia/v1/chat/completions"
+        : "https://integrate.api.nvidia.com/v1/chat/completions",
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,

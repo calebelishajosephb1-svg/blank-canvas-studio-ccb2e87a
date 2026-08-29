@@ -1,12 +1,13 @@
 # Blueprint Lab
 
 # IALE — Interactive Automata Learning Environment
+
 ## MASTER PROMPT — Massive, Complete, Production-Ready Specification
 
 **Version:** 3.1 — Blue-Black Lab Edition (2026-08-29)
 **Stack:** Vanilla HTML5 + CSS3 + ES6 Modules (No React/Vue) + Python 3 HTTP Proxy + LocalStorage
 **Primary Colors:** Blueprint Blue `#2A5BDA` on Void Black `#04070F` / Panel `#0B142A` — NO other accent may dominate
-**Motto:** *The tutor never tells. The canvas never lies. The student always figures it out.*
+**Motto:** _The tutor never tells. The canvas never lies. The student always figures it out._
 
 > This file is the single source of truth. If a line here conflicts with code, code is wrong. If a feature is not in here, it does not exist. Build strictly to this spec.
 
@@ -14,11 +15,11 @@
 
 ## 1. PRODUCT THESIS
 
-**What:** A browser-based laboratory where undergraduates *build* DFAs by hand, *test* them against hidden languages, and are *taught* by a Socratic AI that can see and move everything but will never reveal the answer.
+**What:** A browser-based laboratory where undergraduates _build_ DFAs by hand, _test_ them against hidden languages, and are _taught_ by a Socratic AI that can see and move everything but will never reveal the answer.
 
 **Who:** 2nd-year CS (Theory of Computation). They know what a state is, they fail at: sink states, accepting status, transition hunting, and untangling “why did my machine reject `01`?”
 
-**Single Job of the Page:** Make an abstract DFA feel tactile — states are pucks you drag, transitions are labeled tapes, examples are a physical punch-tape feeding into the machine — so the student stays in *doing* not *reading*.
+**Single Job of the Page:** Make an abstract DFA feel tactile — states are pucks you drag, transitions are labeled tapes, examples are a physical punch-tape feeding into the machine — so the student stays in _doing_ not _reading_.
 
 **Aesthetic Risk (intentional):** The whole app is a **midnight blueprint lab**, not a dashboard. Dark navy/black void with electric blue grid, state nodes glow like lab instruments, tape cells light up as the machine runs. The canvas is the hero, not a number.
 
@@ -26,10 +27,10 @@
 
 ## 2. CORE PRINCIPLES (NON-NEGOTIABLE)
 
-1. **Structural Secrecy > Prompt Politeness.** The hidden target DFA in Discovery is *unreachable* by code path, not just hidden by prompt. `ContextBuilder.buildDiscoveryContext()` signature cannot accept a `targetDfa` param — that would be a bug.
-2. **Socratic Guarantee.** For the *active* exercise (Discovery hidden language OR Debugger counterexample) the AI **NEVER** outputs: concrete `δ(q,σ)=q'`, `q2 --1--> q0`, `| q | 1 | q |`, `(q,1,q)`, regex of hidden language, or a full transition table. It must ask, highlight, or test.
+1. **Structural Secrecy > Prompt Politeness.** The hidden target DFA in Discovery is _unreachable_ by code path, not just hidden by prompt. `ContextBuilder.buildDiscoveryContext()` signature cannot accept a `targetDfa` param — that would be a bug.
+2. **Socratic Guarantee.** For the _active_ exercise (Discovery hidden language OR Debugger counterexample) the AI **NEVER** outputs: concrete `δ(q,σ)=q'`, `q2 --1--> q0`, `| q | 1 | q |`, `(q,1,q)`, regex of hidden language, or a full transition table. It must ask, highlight, or test.
 3. **Orchestrator, Not Chatbot.** The AI has 11 tools and **drives** the session: creates challenges, highlights states, animates traces, switches tabs — but never spams (max 2 tools/turn, 1 `IALE_CHALLENGE`/turn).
-4. **Canvas is Truth.** The DFA on screen *is* the DFA. No hidden model. Validate is the single gate (`Validate.checkTransitionConflict` must be called by every edge-creation path).
+4. **Canvas is Truth.** The DFA on screen _is_ the DFA. No hidden model. Validate is the single gate (`Validate.checkTransitionConflict` must be called by every edge-creation path).
 5. **No Throw, No Crash.** Every engine method is pure and testable. Every UI action is undoable. Every API call returns `{ok, error}` never throws to caller. Missing transitions = crash (reject), not exception.
 6. **Mobile is Not Afterthought.** Responsive down to 390px, keyboard focus visible, `prefers-reduced-motion` respected.
 
@@ -39,7 +40,7 @@
 
 - **No framework.** Plain HTML/CSS/JS, ES6 classes, `Map` for states/transitions, SVG for canvas. No bundler.
 - **Module load order (critical):** `utils.js` → `engine/DFA.js` → `NFA.js` → `regex.js` → `algorithms.js` → `validate.js` → `challenges.js` → `storage/db.js` → `ai/ToolDefinitions.js` → `SessionMemory.js` → `AIBrain.js` → `ContextEngine.js` → `PromptSystem.js` → `SafetyLayer.js` → `ToolOrchestrator.js` → `AIProvider.js` → `ContextBuilder.js` → `AnswerGuard.js` → `ActionBridge.js` → `ui/*` → `ChatbotPanel.js` → `modules/*` → `app.js` last.
-- **Python proxy:** `server.py` serves static *and* `POST /api/proxy` (HTTPS-only targets, streams SSE as `Transfer-Encoding: chunked` with `X-Accel-Buffering: no`). Must be started via `start.bat` or `python server.py [port]` and opened at `http://localhost:PORT`. Opening `index.html` as `file://` must show a red CORS banner and block AI calls with a 2-step fix message.
+- **Python proxy:** `server.py` serves static _and_ `POST /api/proxy` (HTTPS-only targets, streams SSE as `Transfer-Encoding: chunked` with `X-Accel-Buffering: no`). Must be started via `start.bat` or `python server.py [port]` and opened at `http://localhost:PORT`. Opening `index.html` as `file://` must show a red CORS banner and block AI calls with a 2-step fix message.
 - **Storage:** `localStorage` only, via `storage/db.js`. No other file may call `localStorage` for app data (AI settings live in `ChatbotPanel.js` under `iale_ai_settings`).
 
 ---
@@ -51,39 +52,41 @@
 ```css
 :root {
   /* Surfaces */
-  --bg-app:          #04070F; /* void */
-  --bg-canvas:       #080E1F; /* workbench */
-  --bg-panel:        #0B142A;
-  --bg-panel-raised: #12214A;
-  --grid-line:       rgba(42,91,218,0.09);
+  --bg-app: #04070f; /* void */
+  --bg-canvas: #080e1f; /* workbench */
+  --bg-panel: #0b142a;
+  --bg-panel-raised: #12214a;
+  --grid-line: rgba(42, 91, 218, 0.09);
 
   /* Ink */
-  --ink-primary:     #EAF0FF;
-  --ink-muted:       #8A9CC2;
-  --ink-disabled:    #5A6A8A;
-  --border-subtle:   rgba(42,91,218,0.14);
-  --border-strong:   rgba(42,91,218,0.32);
+  --ink-primary: #eaf0ff;
+  --ink-muted: #8a9cc2;
+  --ink-disabled: #5a6a8a;
+  --border-subtle: rgba(42, 91, 218, 0.14);
+  --border-strong: rgba(42, 91, 218, 0.32);
 
   /* Signals — blue is KING */
-  --signal-blue:     #2A5BDA; /* electric blueprint */
-  --signal-blue-10:  rgba(42,91,218,0.10);
-  --signal-blue-15:  rgba(42,91,218,0.15);
-  --signal-blue-40:  rgba(42,91,218,0.40);
-  --signal-cyan:     #0EA5E9; /* accept only */
-  --signal-cyan-15:  rgba(14,165,233,0.15);
-  --signal-rose:     #F43F5E; /* reject only */
-  --signal-rose-15:  rgba(244,63,94,0.14);
-  --overlay-scrim:   rgba(4,7,15,0.78);
+  --signal-blue: #2a5bda; /* electric blueprint */
+  --signal-blue-10: rgba(42, 91, 218, 0.1);
+  --signal-blue-15: rgba(42, 91, 218, 0.15);
+  --signal-blue-40: rgba(42, 91, 218, 0.4);
+  --signal-cyan: #0ea5e9; /* accept only */
+  --signal-cyan-15: rgba(14, 165, 233, 0.15);
+  --signal-rose: #f43f5e; /* reject only */
+  --signal-rose-15: rgba(244, 63, 94, 0.14);
+  --overlay-scrim: rgba(4, 7, 15, 0.78);
 
   /* Radii, space, shadow, type, timing — keep existing 10/16/24 etc. */
   --font-display: "Space Grotesk", system-ui, sans-serif;
-  --font-ui:      "Inter", system-ui, sans-serif;
-  --font-mono:    "JetBrains Mono", monospace;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 ```
+
 - **Overcast theme** `[data-theme="overcast"]` inverts to light but keeps same blue primary `#1D4ED8`.
 
 ### 4.2 Typography
+
 - Display: `Space Grotesk` 600-700, -0.015em, for `challenge-title`, `analytics-title`, `tutor-header-title`.
 - Body: `Inter` 400-600, for UI.
 - Mono: `JetBrains Mono` for strings, tape cells, state labels, code.
@@ -103,7 +106,8 @@
 | All challenges     │ [ Counterexample: "10" Expected: Accept | Yours: Reject ] |
 +------------------------------------------------------------------+
 ```
-- **Signature element:** The DFA canvas *is* the hero — dot grid (`--grid-line`), radial vignette `radial-gradient(800px 400px at 50% 0%, rgba(42,91,218,0.10), transparent 70%), var(--bg-canvas)`, states glow on hover/selection.
+
+- **Signature element:** The DFA canvas _is_ the hero — dot grid (`--grid-line`), radial vignette `radial-gradient(800px 400px at 50% 0%, rgba(42,91,218,0.10), transparent 70%), var(--bg-canvas)`, states glow on hover/selection.
 - **Tape signature:** Example rows are a punch-tape: left border 3px `signal-cyan/rose`, cell `✓/✗` chips, click row → `toast + pulse highlight` of final state.
 
 ### 4.4 Shell
@@ -152,6 +156,7 @@ class DFA {
 ```
 
 Invariants:
+
 - No throwing. Missing transition → `null` → `run` returns false.
 - `complete()` never duplicates `__SINK__`.
 - `symmetricDifferenceWith` must union alphabets.
@@ -281,19 +286,19 @@ DELIVERY       ChatbotPanel   — streaming <think>, markdown, challenge cards, 
 
 ### 7.3 ToolDefinitions `ai/ToolDefinitions.js` (11 tools)
 
-| Tag | Type | When | Required |
-|-----|------|------|----------|
-| `IALE_CHALLENGE` | block `<IALE_CHALLENGE>json</IALE_CHALLENGE>` | Stuck ≥2 fails or idle 45s → offer *slightly easier* practice. At most 1/turn. | `name, difficulty(Easy/Medium/Hard), alphabet, regex, description(no regex), hints[3]` |
-| `IALE_LOAD_CHALLENGE` | self-closing | Direct to curated `FIXED_CHALLENGES` id | `id` |
-| `IALE_GOTO_TAB` | self-closing | True progression, not ping-pong | `tab: discovery|mutation|debugger|analytics|nfa` |
-| `IALE_HIGHLIGHT_STATE` | self-closing | Discussing a state that exists on canvas | `state, color=blue|rose|cyan|amber` |
-| `IALE_CLEAR_HIGHLIGHTS` | self-closing | After demo |
-| `IALE_TEST_STRING` | self-closing | Demo concept with 2 strings live | `value` |
-| `IALE_SHOW_EXAMPLE` | self-closing | Discovery only, add one well-chosen labeled example | `str, accept=true|false` |
-| `IALE_ANIMATE_TRACE` | self-closing | Show step-by-step pulse on trace | `value, speed=slow|normal|fast` |
-| `IALE_SET_HINT_LEVEL` | self-closing | Sync with Socratic L1/L2/L3 | `level=1|2|3` |
-| `IALE_CELEBRATE` | self-closing | After solve | `message?` |
-| `IALE_SUGGEST_NEXT` | self-closing | Propose next challenge, not auto-load | `challengeId, reason?` |
+| Tag                     | Type                                          | When                                                                           | Required                                                                               |
+| ----------------------- | --------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `IALE_CHALLENGE`        | block `<IALE_CHALLENGE>json</IALE_CHALLENGE>` | Stuck ≥2 fails or idle 45s → offer _slightly easier_ practice. At most 1/turn. | `name, difficulty(Easy/Medium/Hard), alphabet, regex, description(no regex), hints[3]` |
+| `IALE_LOAD_CHALLENGE`   | self-closing                                  | Direct to curated `FIXED_CHALLENGES` id                                        | `id`                                                                                   |
+| `IALE_GOTO_TAB`         | self-closing                                  | True progression, not ping-pong                                                | `tab: discovery                                                                        | mutation | debugger | analytics | nfa` |
+| `IALE_HIGHLIGHT_STATE`  | self-closing                                  | Discussing a state that exists on canvas                                       | `state, color=blue                                                                     | rose     | cyan     | amber`    |
+| `IALE_CLEAR_HIGHLIGHTS` | self-closing                                  | After demo                                                                     |
+| `IALE_TEST_STRING`      | self-closing                                  | Demo concept with 2 strings live                                               | `value`                                                                                |
+| `IALE_SHOW_EXAMPLE`     | self-closing                                  | Discovery only, add one well-chosen labeled example                            | `str, accept=true                                                                      | false`   |
+| `IALE_ANIMATE_TRACE`    | self-closing                                  | Show step-by-step pulse on trace                                               | `value, speed=slow                                                                     | normal   | fast`    |
+| `IALE_SET_HINT_LEVEL`   | self-closing                                  | Sync with Socratic L1/L2/L3                                                    | `level=1                                                                               | 2        | 3`       |
+| `IALE_CELEBRATE`        | self-closing                                  | After solve                                                                    | `message?`                                                                             |
+| `IALE_SUGGEST_NEXT`     | self-closing                                  | Propose next challenge, not auto-load                                          | `challengeId, reason?`                                                                 |
 
 - `validate(tag, attrsOrInner)` returns `{valid, data/attrs, reason}`. `regex` validated via `validateRegex`.
 - `buildPromptSection()` renders the compact tool spec for the system prompt.
@@ -507,16 +512,6 @@ All instantiated once on `DOMContentLoaded`, survive tab switches.
 ---
 
 I want you to build this and improve the design if you want/can I want a powerful working product at the end
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/da8d75fa-e277-4a37-9d6f-5aa1b7acfed5).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
