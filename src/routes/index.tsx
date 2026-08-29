@@ -79,6 +79,8 @@ const TABS: { id: TabId; label: string; icon: typeof Compass }[] = [
 function Index() {
   const [tab, setTab] = useState<TabId>("discovery");
   const [tutorOpen, setTutorOpen] = useState(false);
+  /** The tutor is locked out while a timed exam session is running. */
+  const [examActive, setExamActive] = useState(false);
   const { theme, toggle } = useTheme();
   const contexts = useRef<Partial<Record<TabId, () => string>>>({});
 
@@ -94,8 +96,15 @@ function Index() {
   const getContext = useCallback(() => {
     const base = contexts.current[tab]?.() ?? `Module: ${tab}. No context available.`;
     const habits = detectMisconceptions(Storage.getAllMistakes());
+    const exam = Storage.getLastExamReport();
+    const examLine = exam
+      ? `Last exam: ${exam.score}/${exam.total}. Per-concept: ${exam.concepts
+          .map((c) => `${c.concept} ${c.correct}/${c.total}`)
+          .join("; ")}.`
+      : "No exam taken yet.";
     return [
       base,
+      examLine,
       `Learner record: attempted ${Storage.countAttemptedUnique()} unique challenges, solved ${Storage.countSolvedUnique()}.`,
       habits.length ? `Recurring habits: ${habits.join(" ")}` : "No recurring habit detected yet.",
     ].join("\n");
@@ -110,6 +119,12 @@ function Index() {
       const detail = (e as CustomEvent).detail as { type?: string; tab?: string };
       if (detail?.type === "gotoTab" && detail.tab) goto(detail.tab);
     };
+    const examHandler = (e: Event) => {
+      const active = !!(e as CustomEvent<{ active?: boolean }>).detail?.active;
+      setExamActive(active);
+      if (active) setTutorOpen(false);
+    };
+    window.addEventListener("iale-exam-state", examHandler);
     window.addEventListener("iale-tutor-action", handler);
     const offs = [
       onTutorAction("celebrate", () => toast.success("Nice work — that reasoning held up.")),
@@ -120,6 +135,7 @@ function Index() {
       ),
     ];
     return () => {
+      window.removeEventListener("iale-exam-state", examHandler);
       window.removeEventListener("iale-tutor-action", handler);
       offs.forEach((off) => off());
     };
@@ -158,7 +174,12 @@ function Index() {
           <button
             className="tool-btn"
             data-active={tutorOpen}
-            title="Socratic tutor (bring your own key)"
+            disabled={examActive}
+            title={
+              examActive
+                ? "Socratic is offline during a timed exam"
+                : "Socratic tutor (bring your own key)"
+            }
             onClick={() => setTutorOpen((o) => !o)}
           >
             <Bot size={15} />
@@ -197,7 +218,7 @@ function Index() {
           </ModulePane>
         </main>
         <TutorPanel
-          open={tutorOpen}
+          open={tutorOpen && !examActive}
           onClose={() => setTutorOpen(false)}
           moduleId={tab}
           getContext={getContext}

@@ -649,6 +649,12 @@ export function Discovery({
       {practiceOpen && (
         <TimedPractice challenge={challenge} onClose={() => setPracticeOpen(false)} />
       )}
+      {examOpen && (
+        <ExamMode
+          pool={[...FIXED_CHALLENGES, ...extra, ...Storage.getLibrary()]}
+          onClose={() => setExamOpen(false)}
+        />
+      )}
       {creatorOpen && (
         <ChallengeCreator
           defaultAlphabet={alphabet}
