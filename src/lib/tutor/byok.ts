@@ -151,7 +151,25 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     keyPlaceholder: "sk-or-...",
     keysUrl: "https://openrouter.ai/keys",
     models: ["anthropic/claude-sonnet-4.5", "openai/gpt-4.1-mini", "google/gemini-2.5-flash"],
-    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    origin: "https://openrouter.ai",
+    chatPath: "/api/v1/chat/completions",
+    modelsPath: "/api/v1/models",
+    corsOk: true,
+    listNeedsKey: false,
+    parseModels: (json) =>
+      (
+        (json as { data?: { id?: string; name?: string; pricing?: Record<string, string> }[] })
+          .data ?? []
+      )
+        .map((m) => {
+          const id = m.id ?? "";
+          const p = m.pricing ?? {};
+          const nums = ["prompt", "completion", "request"].map((k) => Number(p[k] ?? 0));
+          const free = nums.every((n) => Number.isFinite(n) && n === 0);
+          return { id, label: m.name || id, free };
+        })
+        .filter((m) => m.id && isChatModelId(m.id)),
+
     headers: (key) => ({ "content-type": "application/json", authorization: `Bearer ${key}` }),
     body: (system, messages, model) => ({
       model,
