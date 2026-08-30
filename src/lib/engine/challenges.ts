@@ -1,5 +1,6 @@
 import { DFA, type TransitionMap } from "./dfa";
 import { regexToDFA, validateRegex } from "./regex";
+import { anySymbol, escapeSymbol, randomAlphabet } from "../alphabet";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
