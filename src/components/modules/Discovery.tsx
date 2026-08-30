@@ -193,6 +193,12 @@ export function Discovery({
 
   const check = () => {
     if (solved) return;
+    if (alphaOverride && alphaOverride.join() !== challenge.alphabet.join()) {
+      toast.error("Σ doesn't match this challenge", {
+        description: `This hidden language is defined over {${challenge.alphabet.join(",")}}. Reset Σ or load a new challenge.`,
+      });
+      return;
+    }
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     if (errors.length) {
@@ -232,6 +238,7 @@ export function Discovery({
     // "countMod" the most demanding; no bias means a free random draw.
     const ch = challengeGenerator.random(
       bias.current > 0 ? "countMod" : bias.current < 0 ? "suffix" : undefined,
+      alphaOverride ?? undefined,
     );
     if (!ch) {
       toast.error("Generator hiccup — try again");
@@ -549,6 +556,7 @@ export function Discovery({
           onClear={() => replace(starterMachine())}
           onLayout={() => commit((m) => layoutMachine(m))}
           alphabet={alphabet}
+          onAlphabetChange={(next) => setAlphaOverride(next.length ? next : null)}
         >
           <button
             className="btn-ghost inline-flex items-center gap-1.5"
