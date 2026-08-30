@@ -100,13 +100,34 @@ export function CanvasToolbar({
           <LayoutGrid size={15} />
         </button>
       )}
-      {alphabet && (
-        <span className="badge" data-tone="blue" style={{ fontFamily: "var(--font-mono-family)" }}>
-          Σ = {"{"}
-          {alphabet.join(",")}
-          {"}"}
-        </span>
-      )}
+      {alphabet &&
+        (onAlphabetChange ? (
+          <label
+            className="flex items-center gap-1 text-[11px]"
+            style={{ fontFamily: "var(--font-mono-family)", color: "var(--ink-muted)" }}
+            title="Alphabet — any symbols, comma separated (e.g. a,b,c or 0,1,2)"
+          >
+            Σ =
+            <input
+              className="field-input"
+              style={{ width: 96, padding: "2px 6px", fontSize: 11 }}
+              aria-label="Alphabet symbols"
+              value={alphabet.join(",")}
+              onChange={(e) => onAlphabetChange(parseAlphabet(e.target.value))}
+            />
+          </label>
+        ) : (
+          <span
+            className="badge"
+            data-tone="blue"
+            style={{ fontFamily: "var(--font-mono-family)" }}
+          >
+            Σ = {"{"}
+            {alphabet.join(",")}
+            {"}"}
+          </span>
+        ))}
+
       <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
