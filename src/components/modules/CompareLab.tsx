@@ -5,6 +5,7 @@ import { findCounterexample } from "@/lib/engine/algorithms";
 import { OP_LABEL, productConstruction, type ProductOp } from "@/lib/engine/product";
 import { dfaToMachine, layoutMachine, machineToDFA, useMachine } from "@/lib/machine";
 import { MousePointer2, Circle, Spline, Eraser } from "lucide-react";
+import { parseAlphabet } from "@/lib/alphabet";
 
 const SEEDS: Record<"A" | "B", DFA> = {
   A: new DFA({
@@ -37,12 +38,13 @@ export function CompareLab({ active, onContext }: Props) {
   const [mode, setMode] = useState<CanvasMode>("pointer");
   const [probe, setProbe] = useState("");
   const [checked, setChecked] = useState(false);
+  const [alphabet, setAlphabet] = useState<string[]>(DEFAULT_ALPHABET);
 
   const a = useMachine(layoutMachine(dfaToMachine(SEEDS.A)));
   const b = useMachine(layoutMachine(dfaToMachine(SEEDS.B)));
 
-  const dfaA = useMemo(() => machineToDFA(a.machine, alphabet), [a.machine]);
-  const dfaB = useMemo(() => machineToDFA(b.machine, alphabet), [b.machine]);
+  const dfaA = useMemo(() => machineToDFA(a.machine, alphabet), [a.machine, alphabet]);
+  const dfaB = useMemo(() => machineToDFA(b.machine, alphabet), [b.machine, alphabet]);
 
   const activeOp: ProductOp = tool === "equivalence" ? "symmetric" : op;
   const product = useMemo(() => productConstruction(dfaA, dfaB, activeOp), [dfaA, dfaB, activeOp]);

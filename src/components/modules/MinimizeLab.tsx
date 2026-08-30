@@ -5,6 +5,7 @@ import { minimize } from "@/lib/engine/algorithms";
 import { accessString, myhillNerodeTable, refinementRounds, cellKey } from "@/lib/engine/minimize";
 import { dfaToMachine, layoutMachine, machineToDFA, useMachine, type Machine } from "@/lib/machine";
 import { MousePointer2, Circle, Spline, Eraser, Undo2, Redo2 } from "lucide-react";
+import { parseAlphabet } from "@/lib/alphabet";
 
 interface Preset {
   name: string;
@@ -85,6 +86,8 @@ export function MinimizeLab({ active, onContext }: Props) {
   const [showTable, setShowTable] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [selectedPair, setSelectedPair] = useState<{ a: string; b: string } | null>(null);
+  const [alphaOverride, setAlphaOverride] = useState<string[] | null>(null);
+  const alphabet = alphaOverride ?? preset.alphabet;
 
   const loadPreset = (i: number) => {
     setPresetIndex(i);
@@ -95,7 +98,7 @@ export function MinimizeLab({ active, onContext }: Props) {
     setSelectedPair(null);
   };
 
-  const dfa = useMemo(() => machineToDFA(machine, preset.alphabet), [machine, preset.alphabet]);
+  const dfa = useMemo(() => machineToDFA(machine, alphabet), [machine, alphabet]);
   const { rounds } = useMemo(() => refinementRounds(dfa), [dfa]);
   const table = useMemo(() => myhillNerodeTable(dfa), [dfa]);
   const minimal = useMemo(() => minimize(dfa), [dfa]);
@@ -118,14 +121,14 @@ export function MinimizeLab({ active, onContext }: Props) {
     onContext?.(() =>
       [
         "Module: Minimizer (Myhill–Nerode). The student's machine and every revealed refinement round are fully PUBLIC — discuss them freely.",
-        `Machine: ${dfa.states.length} states, alphabet {${preset.alphabet.join(",")}}.`,
+        `Machine: ${dfa.states.length} states, alphabet {${alphabet.join(",")}}.`,
         `Refinement rounds available: ${rounds.length}. Revealed through round ${round}.`,
         `Partition shown now: ${(currentRound?.groups ?? []).map((g) => `{${g.join(",")}}`).join(" ")}`,
         `Distinguishability table opened: ${showTable}. Minimal result revealed: ${showResult}.`,
         "Sequencing rule: never state the outcome of a refinement round the student has not revealed yet, and never name the minimal state count before they reveal the result — ask them to find a distinguishing suffix themselves first.",
       ].join("\n"),
     );
-  }, [onContext, dfa, preset.alphabet, rounds.length, round, currentRound, showTable, showResult]);
+  }, [onContext, dfa, alphabet, rounds.length, round, currentRound, showTable, showResult]);
 
   const pairCell = selectedPair ? table.cells.get(cellKey(selectedPair.a, selectedPair.b)) : null;
 
@@ -327,7 +330,7 @@ export function MinimizeLab({ active, onContext }: Props) {
           </button>
           <span className="badge ml-auto" data-tone="blue">
             Σ = {"{"}
-            {preset.alphabet.join(",")}
+            {alphabet.join(",")}
             {"}"}
           </span>
         </div>
@@ -342,7 +345,7 @@ export function MinimizeLab({ active, onContext }: Props) {
               onChange={commit}
               onTransientChange={set}
               editable={active !== false}
-              alphabet={preset.alphabet}
+              alphabet={alphabet}
               mode={mode}
               highlights={highlights}
               exportName="minimizer"
@@ -353,7 +356,7 @@ export function MinimizeLab({ active, onContext }: Props) {
             {showResult ? (
               <DFACanvas
                 machine={minimalMachine}
-                alphabet={preset.alphabet}
+                alphabet={alphabet}
                 editable={false}
                 mode="pointer"
                 exportName="minimal"
