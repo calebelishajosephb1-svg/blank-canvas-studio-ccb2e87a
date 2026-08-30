@@ -24,7 +24,7 @@ const SEEDS: Record<"A" | "B", DFA> = {
 };
 
 const OPS: ProductOp[] = ["intersection", "union", "difference", "symmetric"];
-const ALPHABET = ["0", "1"];
+const DEFAULT_ALPHABET = ["0", "1"];
 
 interface Props {
   active?: boolean;
@@ -41,8 +41,8 @@ export function CompareLab({ active, onContext }: Props) {
   const a = useMachine(layoutMachine(dfaToMachine(SEEDS.A)));
   const b = useMachine(layoutMachine(dfaToMachine(SEEDS.B)));
 
-  const dfaA = useMemo(() => machineToDFA(a.machine, ALPHABET), [a.machine]);
-  const dfaB = useMemo(() => machineToDFA(b.machine, ALPHABET), [b.machine]);
+  const dfaA = useMemo(() => machineToDFA(a.machine, alphabet), [a.machine]);
+  const dfaB = useMemo(() => machineToDFA(b.machine, alphabet), [b.machine]);
 
   const activeOp: ProductOp = tool === "equivalence" ? "symmetric" : op;
   const product = useMemo(() => productConstruction(dfaA, dfaB, activeOp), [dfaA, dfaB, activeOp]);
@@ -237,11 +237,23 @@ export function CompareLab({ active, onContext }: Props) {
       <section className="workbench">
         <div className="canvas-toolbar">
           {toolbar}
-          <span className="badge ml-auto" data-tone="blue">
-            Σ = {"{"}
-            {ALPHABET.join(",")}
-            {"}"}
-          </span>
+          <label
+            className="ml-auto flex items-center gap-1 text-[11px]"
+            style={{ fontFamily: "var(--font-mono-family)", color: "var(--ink-muted)" }}
+            title="Alphabet — any symbols, comma separated"
+          >
+            Σ =
+            <input
+              className="field-input"
+              style={{ width: 96, padding: "2px 6px", fontSize: 11 }}
+              aria-label="Alphabet symbols"
+              value={alphabet.join(",")}
+              onChange={(e) => {
+                const next = parseAlphabet(e.target.value);
+                setAlphabet(next.length ? next : DEFAULT_ALPHABET);
+              }}
+            />
+          </label>
         </div>
         <div
           className="dual-canvas grid min-h-0 flex-1 gap-px"
@@ -254,7 +266,7 @@ export function CompareLab({ active, onContext }: Props) {
               onChange={a.commit}
               onTransientChange={a.set}
               editable={active !== false}
-              alphabet={ALPHABET}
+              alphabet={alphabet}
               mode={mode}
               exportName="machine-a"
             />
@@ -266,7 +278,7 @@ export function CompareLab({ active, onContext }: Props) {
               onChange={b.commit}
               onTransientChange={b.set}
               editable={active !== false}
-              alphabet={ALPHABET}
+              alphabet={alphabet}
               mode={mode}
               exportName="machine-b"
             />
@@ -278,7 +290,7 @@ export function CompareLab({ active, onContext }: Props) {
             {tool === "product" || checked ? (
               <DFACanvas
                 machine={productMachine}
-                alphabet={ALPHABET}
+                alphabet={alphabet}
                 editable={false}
                 mode="pointer"
                 exportName="product"
