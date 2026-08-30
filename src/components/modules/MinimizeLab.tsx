@@ -91,6 +91,7 @@ export function MinimizeLab({ active, onContext }: Props) {
 
   const loadPreset = (i: number) => {
     setPresetIndex(i);
+    setAlphaOverride(null);
     replace(layoutMachine(dfaToMachine(PRESETS[i]!.dfa)));
     setRound(0);
     setShowTable(false);
@@ -328,11 +329,23 @@ export function MinimizeLab({ active, onContext }: Props) {
           <button className="tool-btn" disabled={!canRedo} onClick={redo} title="Redo">
             <Redo2 size={15} />
           </button>
-          <span className="badge ml-auto" data-tone="blue">
-            Σ = {"{"}
-            {alphabet.join(",")}
-            {"}"}
-          </span>
+          <label
+            className="ml-auto flex items-center gap-1 text-[11px]"
+            style={{ fontFamily: "var(--font-mono-family)", color: "var(--ink-muted)" }}
+            title="Alphabet — any symbols, comma separated"
+          >
+            Σ =
+            <input
+              className="field-input"
+              style={{ width: 96, padding: "2px 6px", fontSize: 11 }}
+              aria-label="Alphabet symbols"
+              value={alphabet.join(",")}
+              onChange={(e) => {
+                const next = parseAlphabet(e.target.value);
+                setAlphaOverride(next.length ? next : null);
+              }}
+            />
+          </label>
         </div>
         <div
           className="dual-canvas grid min-h-0 flex-1 gap-px"
