@@ -293,6 +293,10 @@ export function Discovery({
           setExtra((prev) => [ch, ...prev].slice(0, 12));
           setChallengeAndReset(ch, index + 1);
           toast.success("Socratic set you a practice challenge", { description: ch.name });
+        } else {
+          toast.error("Socratic suggested an invalid practice language", {
+            description: "Its regex used symbols outside the alphabet — ask it to try again.",
+          });
         }
       }
     };
