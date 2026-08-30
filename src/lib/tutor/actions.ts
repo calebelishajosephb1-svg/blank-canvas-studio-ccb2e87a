@@ -7,6 +7,8 @@
  * never editing a switch in three places.
  */
 
+import { parseAlphabet } from "@/lib/alphabet";
+
 export type TutorAction =
   | { type: "highlight"; state: string; color: "blue" | "rose" | "cyan" | "amber" }
   | {
