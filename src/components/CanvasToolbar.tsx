@@ -10,6 +10,7 @@ import {
   Undo2,
 } from "lucide-react";
 import type { CanvasMode } from "./DFACanvas";
+import { parseAlphabet } from "@/lib/alphabet";
 
 const MODES: { mode: CanvasMode; icon: ComponentType<{ size?: number }>; title: string }[] = [
   { mode: "pointer", icon: MousePointer2, title: "Move / select (V)" },
@@ -28,6 +29,7 @@ export function CanvasToolbar({
   onClear,
   onLayout,
   alphabet,
+  onAlphabetChange,
   children,
 }: {
   mode: CanvasMode;
@@ -39,6 +41,7 @@ export function CanvasToolbar({
   onClear?: () => void;
   onLayout?: () => void;
   alphabet?: string[];
+  onAlphabetChange?: (a: string[]) => void;
   children?: ReactNode;
 }) {
   return (
