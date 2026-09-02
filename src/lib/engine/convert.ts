@@ -135,20 +135,27 @@ function star(r: string): string {
   return `${wrap(r)}*`;
 }
 
-/** Cosmetic tidy-up applied to the FINAL string only — intermediate steps stay raw. */
+/**
+ * Cosmetic tidy-up applied to the FINAL string only — intermediate steps stay raw.
+ * Only language-preserving rewrites are allowed here: ε is NEVER deleted, because
+ * in a union ("a|ε") it carries meaning and dropping it produced invalid output.
+ */
 function cleanup(r: string): string {
   let out = r;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     const next = out
+      // (x) → x for a single atom inside redundant parentheses
+      .replace(/\(([^()|*+?]{1})\)/g, "$1")
+      // ε|ε → ε
       .replace(new RegExp(`${EPS}\\|${EPS}`, "g"), EPS)
-      .replace(new RegExp(`\\(${EPS}\\)`, "g"), EPS)
-      .replace(new RegExp(`${EPS}(?=[^*+?|)]|$)`, "g"), "")
-      .replace(/\(([^()|]{1})\)/g, "$1");
-    if (next === out || next === "") break;
+      // ε* → ε
+      .replace(new RegExp(`${EPS}\\*`, "g"), EPS);
+    if (next === out) break;
     out = next;
   }
   return out || EPS;
 }
+
 
 /**
  * Any NFA (or ε-NFA, or lifted DFA) → regex, by GNFA state elimination.
