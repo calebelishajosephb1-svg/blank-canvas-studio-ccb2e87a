@@ -415,6 +415,14 @@ export function Converter({
           <span className="badge" data-tone="blue">
             {REPS.find((r) => r.id === source)?.label} → {REPS.find((r) => r.id === target)?.label}
           </span>
+          {result?.kind === "machine" && (
+            <span className="badge" data-tone={result.verified.equivalent ? "accept" : "reject"}>
+              {result.verified.equivalent
+                ? "✓ same language as the source — verified"
+                : `⚠ differs from the source on "${result.verified.counterexample?.string || "ε"}"`}
+            </span>
+          )}
+
           {isolate && (
             <button
               className="tool-btn"
