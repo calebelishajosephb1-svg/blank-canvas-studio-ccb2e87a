@@ -259,9 +259,25 @@ export function Converter({
         setHighlights((h) => ({ ...h, [a.state]: "rose" })),
       ),
       onTutorAction("zoomTo", (a) => setHighlights((h) => ({ ...h, [a.state]: "cyan" }))),
+      // The tutor may set up a conversion for the student (and optionally run it).
+      onTutorAction("setConversion", (a) => {
+        setSource(a.source as RepId);
+        setTarget(a.target as RepId);
+        if (a.alphabet.length) setAlphabetText(a.alphabet.join(","));
+        if (a.regex !== null) setRegexInput(a.regex);
+        if (a.run) setPendingRun(true);
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, []);
+
+  /** Run after the tutor-applied inputs have landed in state. */
+  useEffect(() => {
+    if (!pendingRun) return;
+    setPendingRun(false);
+    convert();
+  }, [pendingRun, convert]);
+
 
   if (!active) return null;
 
