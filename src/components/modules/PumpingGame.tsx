@@ -163,7 +163,7 @@ export function PumpingGame({ onContext }: Props) {
 
         <div className="flex flex-col gap-1">
           <span className="section-label">Languages</span>
-          {PUMPING_LANGUAGES.map((l, i) => (
+          {languages.map((l, i) => (
             <button
               key={l.id}
               className="tape-row"
