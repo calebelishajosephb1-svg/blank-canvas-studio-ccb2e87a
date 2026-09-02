@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRightLeft, Copy, Wand2 } from "lucide-react";
 import { DFACanvas, type CanvasMode } from "@/components/DFACanvas";
 import { CanvasToolbar } from "@/components/CanvasToolbar";
