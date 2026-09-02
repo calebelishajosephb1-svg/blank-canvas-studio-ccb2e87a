@@ -31,6 +31,12 @@ import { buildConverterContext } from "@/lib/tutor/context";
 
 const SAVE_ID = "converter-source";
 
+interface Verified {
+  equivalent: boolean;
+  counterexample: { string: string } | null;
+  error?: string;
+}
+
 type Result =
   | {
       kind: "machine";
@@ -39,14 +45,16 @@ type Result =
       steps: string[];
       identity: boolean;
       note: string;
+      verified: Verified;
     }
   | {
       kind: "regex";
       regex: string | null;
       steps: string[];
       gnfa: GNFAStep[];
-      verified: { equivalent: boolean; counterexample: { string: string } | null; error?: string };
+      verified: Verified;
     };
+
 
 export function Converter({
   active,
