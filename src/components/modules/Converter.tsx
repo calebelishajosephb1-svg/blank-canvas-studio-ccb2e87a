@@ -3,6 +3,7 @@ import { ArrowRightLeft, Copy, Wand2 } from "lucide-react";
 import { DFACanvas, type CanvasMode } from "@/components/DFACanvas";
 import { CanvasToolbar } from "@/components/CanvasToolbar";
 import { DFA } from "@/lib/engine/dfa";
+import { findCounterexample } from "@/lib/engine/algorithms";
 import { EPS, NFA } from "@/lib/engine/nfa";
 import { regexToNFA, validateRegex } from "@/lib/engine/regex";
 import {
