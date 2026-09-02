@@ -216,12 +216,33 @@ export function Converter({
     }
   }, [sourceNfa, target, source, alphabet, machine, regexCheck.error, verifyMachine]);
 
-  /** A stale result from a previous input is worse than none — drop it on any edit. */
+  /**
+   * A stale result from a previous input is worse than none — drop it when the
+   * inputs actually change. Keyed on a content signature, because the machine
+   * object identity also changes on cosmetic events like dragging a state.
+   */
+  const inputKey = useMemo(
+    () =>
+      [
+        source,
+        target,
+        regexInput,
+        alphabet.join(","),
+        machine.states.map((s) => `${s.label}${s.isStart ? "s" : ""}${s.isAccepting ? "a" : ""}`).join("|"),
+        machine.transitions.map((t) => `${t.from}>${t.to}:${t.symbols.join("")}`).join("|"),
+      ].join("#"),
+    [source, target, regexInput, alphabet, machine],
+  );
+  const lastKey = useRef(inputKey);
   useEffect(() => {
+    if (lastKey.current === inputKey) return;
+    lastKey.current = inputKey;
     setResult(null);
     setLogStep(0);
     setError(null);
-  }, [source, target, regexInput, machine, alphabet.join(",")]);
+  }, [inputKey]);
+
+
 
 
   /* ── tutor context (PUBLIC tier: nothing hidden here) ── */
