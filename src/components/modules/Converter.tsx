@@ -111,75 +111,115 @@ export function Converter({
     return machineToNFA(machine, alphabet);
   }, [source, regexInput, regexCheck.valid, alphabet, machine]);
 
+  /** Every machine result is checked against the source language, not assumed correct. */
+  const verifyMachine = useCallback((src: NFA, out: NFA): Verified => {
+    try {
+      const ce = findCounterexample(toDfa(src), toDfa(out));
+      return { equivalent: !ce, counterexample: ce ? { string: ce.string } : null };
+    } catch (e) {
+      return { equivalent: false, counterexample: null, error: (e as Error).message };
+    }
+  }, []);
+
   const convert = useCallback(() => {
     setError(null);
     setLogStep(0);
-    const nfa = sourceNfa();
+    setResult(null);
+    if (!alphabet.length) {
+      setError("Σ is empty — add at least one symbol before converting.");
+      return;
+    }
+    if (source !== "regex" && !machine.states.some((s) => s.isStart)) {
+      setError("The source machine has no start state — mark one first.");
+      return;
+    }
+    let nfa: NFA | null = null;
+    try {
+      nfa = sourceNfa();
+    } catch (e) {
+      setError((e as Error).message);
+      return;
+    }
     if (!nfa) {
       setError(regexCheck.error ?? "Nothing to convert yet.");
       return;
     }
-    if (target === "regex") {
-      const { regex, steps } = nfaToRegex(nfa);
-      const verified = regex
-        ? verifyRegexAgainstDfa(regex, toDfa(nfa))
-        : {
-            equivalent: true,
-            counterexample: null,
-            error: "Empty language — no regex exists (∅).",
-          };
-      setResult({
-        kind: "regex",
-        regex,
-        gnfa: steps,
-        steps: steps.map((s) => `eliminate ${s.eliminated}: ${s.note}`),
-        verified,
-      });
-      return;
-    }
-    if (target === "dfa") {
-      const { dfa, steps } = nfa.toDFA();
+    try {
+      if (target === "regex") {
+        const { regex, steps } = nfaToRegex(nfa);
+        const verified: Verified = regex
+          ? verifyRegexAgainstDfa(regex, toDfa(nfa))
+          : {
+              equivalent: true,
+              counterexample: null,
+              error: "Empty language — no regex exists (∅).",
+            };
+        setResult({
+          kind: "regex",
+          regex,
+          gnfa: steps,
+          steps: steps.map((s) => `eliminate ${s.eliminated}: ${s.note}`),
+          verified,
+        });
+        return;
+      }
+      if (target === "dfa") {
+        const { dfa, steps } = nfa.toDFA();
+        setResult({
+          kind: "machine",
+          machine: layoutMachine(dfaToMachine(dfa)),
+          alphabet,
+          steps,
+          identity: false,
+          note: "Subset construction: each DFA state is a set of NFA states.",
+          verified: verifyMachine(nfa, liftToNfa(dfa)),
+        });
+        return;
+      }
+      if (target === "nfa") {
+        const { nfa: out, steps } = removeEpsilons(nfa);
+        const identity = source === "dfa" || source === "nfa";
+        setResult({
+          kind: "machine",
+          machine: layoutMachine(nfaToMachine(out)),
+          alphabet,
+          steps: identity ? [] : steps,
+          identity,
+          note:
+            source === "dfa"
+              ? "A DFA already satisfies the NFA definition — this is a reinterpretation, not a computation."
+              : source === "nfa"
+                ? "Already an NFA with no ε-edges — identity."
+                : "ε-edges removed; nondeterminism kept (no determinisation).",
+          verified: verifyMachine(nfa, out),
+        });
+        return;
+      }
+      // target = ε-NFA
       setResult({
         kind: "machine",
-        machine: layoutMachine(dfaToMachine(dfa)),
-        alphabet,
-        steps,
-        identity: false,
-        note: "Subset construction: each DFA state is a set of NFA states.",
-      });
-      return;
-    }
-    if (target === "nfa") {
-      const { nfa: out, steps } = removeEpsilons(nfa);
-      const identity = source === "dfa" || source === "nfa";
-      setResult({
-        kind: "machine",
-        machine: nfaToMachine(out),
-        alphabet,
-        steps: identity ? [] : steps,
-        identity,
+        machine: layoutMachine(nfaToMachine(nfa)),
+        alphabet: [...alphabet, EPS],
+        steps: [],
+        identity: source !== "regex",
         note:
-          source === "dfa"
-            ? "A DFA already satisfies the NFA definition — this is a reinterpretation, not a computation."
-            : source === "nfa"
-              ? "Already an NFA with no ε-edges — identity."
-              : "ε-edges removed; nondeterminism kept (no determinisation).",
+          source === "regex"
+            ? "Thompson's construction — its output genuinely contains ε-edges."
+            : "An automaton with zero ε-edges is already a valid ε-NFA — identity, no fake ε-edges added.",
+        verified: { equivalent: true, counterexample: null },
       });
-      return;
+    } catch (e) {
+      setError(`Conversion failed: ${(e as Error).message}`);
     }
-    // target = ε-NFA
-    setResult({
-      kind: "machine",
-      machine: nfaToMachine(nfa),
-      alphabet: [...alphabet, EPS],
-      steps: [],
-      identity: source !== "regex",
-      note:
-        source === "regex"
-          ? "Thompson's construction — its output genuinely contains ε-edges."
-          : "An automaton with zero ε-edges is already a valid ε-NFA — identity, no fake ε-edges added.",
-    });
-  }, [sourceNfa, target, source, alphabet, regexCheck.error]);
+  }, [sourceNfa, target, source, alphabet, machine, regexCheck.error, verifyMachine]);
+
+  /** A stale result from a previous input is worse than none — drop it on any edit. */
+  useEffect(() => {
+    setResult(null);
+    setLogStep(0);
+    setError(null);
+  }, [source, target, regexInput, machine, alphabet.join(",")]);
+
 
   /* ── tutor context (PUBLIC tier: nothing hidden here) ── */
   useEffect(() => {
