@@ -123,7 +123,32 @@ export const ACTION_REGISTRY: Record<string, Builder> = {
         }
       : null;
   },
+  // Pumping lemma: instantiate a non-regular language from a closed vocabulary
+  // of kinds over any symbols the tutor chooses.
+  PUMPING_LANGUAGE: (a) => {
+    if (!a["kind"]) return null;
+    const symbols = parseAlphabet(a["symbols"] || a["alphabet"] || "ab");
+    return symbols.length
+      ? { type: "pumpingLanguage", kind: a["kind"].toLowerCase(), symbols, name: a["name"] || "" }
+      : null;
+  },
+  // Converter: set up (and optionally run) a conversion for the student.
+  SET_CONVERSION: (a) => {
+    const reps = ["dfa", "nfa", "enfa", "regex"];
+    const source = (a["source"] || "").toLowerCase();
+    const target = (a["target"] || "").toLowerCase();
+    if (!reps.includes(source) || !reps.includes(target) || source === target) return null;
+    return {
+      type: "setConversion",
+      source,
+      target,
+      alphabet: a["alphabet"] ? parseAlphabet(a["alphabet"]) : [],
+      regex: a["regex"] ?? null,
+      run: a["run"] !== "false",
+    };
+  },
 };
+
 
 export function parseTutorActions(text: string): { cleanText: string; actions: TutorAction[] } {
   const actions: TutorAction[] = [];
