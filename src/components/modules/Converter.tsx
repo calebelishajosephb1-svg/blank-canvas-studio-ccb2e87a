@@ -73,6 +73,8 @@ export function Converter({
   const [result, setResult] = useState<Result | null>(null);
   const [logStep, setLogStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** Set by a tutor action so the conversion runs once its inputs are in state. */
+  const [pendingRun, setPendingRun] = useState(false);
   const [isolate, setIsolate] = useState<string | null>(null);
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<Record<string, "blue" | "cyan" | "rose" | "amber">>(
