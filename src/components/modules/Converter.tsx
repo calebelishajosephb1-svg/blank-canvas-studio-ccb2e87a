@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRightLeft, Copy, Wand2 } from "lucide-react";
 import { DFACanvas, type CanvasMode } from "@/components/DFACanvas";
 import { CanvasToolbar } from "@/components/CanvasToolbar";
 import { DFA } from "@/lib/engine/dfa";
+import { findCounterexample } from "@/lib/engine/algorithms";
 import { EPS, NFA } from "@/lib/engine/nfa";
 import { regexToNFA, validateRegex } from "@/lib/engine/regex";
 import {
@@ -31,6 +32,12 @@ import { buildConverterContext } from "@/lib/tutor/context";
 
 const SAVE_ID = "converter-source";
 
+interface Verified {
+  equivalent: boolean;
+  counterexample: { string: string } | null;
+  error?: string;
+}
+
 type Result =
   | {
       kind: "machine";
@@ -39,14 +46,16 @@ type Result =
       steps: string[];
       identity: boolean;
       note: string;
+      verified: Verified;
     }
   | {
       kind: "regex";
       regex: string | null;
       steps: string[];
       gnfa: GNFAStep[];
-      verified: { equivalent: boolean; counterexample: { string: string } | null; error?: string };
+      verified: Verified;
     };
+
 
 export function Converter({
   active,
@@ -64,6 +73,8 @@ export function Converter({
   const [result, setResult] = useState<Result | null>(null);
   const [logStep, setLogStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** Set by a tutor action so the conversion runs once its inputs are in state. */
+  const [pendingRun, setPendingRun] = useState(false);
   const [isolate, setIsolate] = useState<string | null>(null);
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<Record<string, "blue" | "cyan" | "rose" | "amber">>(
@@ -103,75 +114,136 @@ export function Converter({
     return machineToNFA(machine, alphabet);
   }, [source, regexInput, regexCheck.valid, alphabet, machine]);
 
+  /** Every machine result is checked against the source language, not assumed correct. */
+  const verifyMachine = useCallback((src: NFA, out: NFA): Verified => {
+    try {
+      const ce = findCounterexample(toDfa(src), toDfa(out));
+      return { equivalent: !ce, counterexample: ce ? { string: ce.string } : null };
+    } catch (e) {
+      return { equivalent: false, counterexample: null, error: (e as Error).message };
+    }
+  }, []);
+
   const convert = useCallback(() => {
     setError(null);
     setLogStep(0);
-    const nfa = sourceNfa();
+    setResult(null);
+    if (!alphabet.length) {
+      setError("Σ is empty — add at least one symbol before converting.");
+      return;
+    }
+    if (source !== "regex" && !machine.states.some((s) => s.isStart)) {
+      setError("The source machine has no start state — mark one first.");
+      return;
+    }
+    let nfa: NFA | null = null;
+    try {
+      nfa = sourceNfa();
+    } catch (e) {
+      setError((e as Error).message);
+      return;
+    }
     if (!nfa) {
       setError(regexCheck.error ?? "Nothing to convert yet.");
       return;
     }
-    if (target === "regex") {
-      const { regex, steps } = nfaToRegex(nfa);
-      const verified = regex
-        ? verifyRegexAgainstDfa(regex, toDfa(nfa))
-        : {
-            equivalent: true,
-            counterexample: null,
-            error: "Empty language — no regex exists (∅).",
-          };
-      setResult({
-        kind: "regex",
-        regex,
-        gnfa: steps,
-        steps: steps.map((s) => `eliminate ${s.eliminated}: ${s.note}`),
-        verified,
-      });
-      return;
-    }
-    if (target === "dfa") {
-      const { dfa, steps } = nfa.toDFA();
+    try {
+      if (target === "regex") {
+        const { regex, steps } = nfaToRegex(nfa);
+        const verified: Verified = regex
+          ? verifyRegexAgainstDfa(regex, toDfa(nfa))
+          : {
+              equivalent: true,
+              counterexample: null,
+              error: "Empty language — no regex exists (∅).",
+            };
+        setResult({
+          kind: "regex",
+          regex,
+          gnfa: steps,
+          steps: steps.map((s) => `eliminate ${s.eliminated}: ${s.note}`),
+          verified,
+        });
+        return;
+      }
+      if (target === "dfa") {
+        const { dfa, steps } = nfa.toDFA();
+        setResult({
+          kind: "machine",
+          machine: layoutMachine(dfaToMachine(dfa)),
+          alphabet,
+          steps,
+          identity: false,
+          note: "Subset construction: each DFA state is a set of NFA states.",
+          verified: verifyMachine(nfa, liftToNfa(dfa)),
+        });
+        return;
+      }
+      if (target === "nfa") {
+        const { nfa: out, steps } = removeEpsilons(nfa);
+        const identity = source === "dfa" || source === "nfa";
+        setResult({
+          kind: "machine",
+          machine: layoutMachine(nfaToMachine(out)),
+          alphabet,
+          steps: identity ? [] : steps,
+          identity,
+          note:
+            source === "dfa"
+              ? "A DFA already satisfies the NFA definition — this is a reinterpretation, not a computation."
+              : source === "nfa"
+                ? "Already an NFA with no ε-edges — identity."
+                : "ε-edges removed; nondeterminism kept (no determinisation).",
+          verified: verifyMachine(nfa, out),
+        });
+        return;
+      }
+      // target = ε-NFA
       setResult({
         kind: "machine",
-        machine: layoutMachine(dfaToMachine(dfa)),
-        alphabet,
-        steps,
-        identity: false,
-        note: "Subset construction: each DFA state is a set of NFA states.",
-      });
-      return;
-    }
-    if (target === "nfa") {
-      const { nfa: out, steps } = removeEpsilons(nfa);
-      const identity = source === "dfa" || source === "nfa";
-      setResult({
-        kind: "machine",
-        machine: nfaToMachine(out),
-        alphabet,
-        steps: identity ? [] : steps,
-        identity,
+        machine: layoutMachine(nfaToMachine(nfa)),
+        alphabet: [...alphabet, EPS],
+        steps: [],
+        identity: source !== "regex",
         note:
-          source === "dfa"
-            ? "A DFA already satisfies the NFA definition — this is a reinterpretation, not a computation."
-            : source === "nfa"
-              ? "Already an NFA with no ε-edges — identity."
-              : "ε-edges removed; nondeterminism kept (no determinisation).",
+          source === "regex"
+            ? "Thompson's construction — its output genuinely contains ε-edges."
+            : "An automaton with zero ε-edges is already a valid ε-NFA — identity, no fake ε-edges added.",
+        verified: { equivalent: true, counterexample: null },
       });
-      return;
+    } catch (e) {
+      setError(`Conversion failed: ${(e as Error).message}`);
     }
-    // target = ε-NFA
-    setResult({
-      kind: "machine",
-      machine: nfaToMachine(nfa),
-      alphabet: [...alphabet, EPS],
-      steps: [],
-      identity: source !== "regex",
-      note:
-        source === "regex"
-          ? "Thompson's construction — its output genuinely contains ε-edges."
-          : "An automaton with zero ε-edges is already a valid ε-NFA — identity, no fake ε-edges added.",
-    });
-  }, [sourceNfa, target, source, alphabet, regexCheck.error]);
+  }, [sourceNfa, target, source, alphabet, machine, regexCheck.error, verifyMachine]);
+
+  /**
+   * A stale result from a previous input is worse than none — drop it when the
+   * inputs actually change. Keyed on a content signature, because the machine
+   * object identity also changes on cosmetic events like dragging a state.
+   */
+  const inputKey = useMemo(
+    () =>
+      [
+        source,
+        target,
+        regexInput,
+        alphabet.join(","),
+        machine.states.map((s) => `${s.label}${s.isStart ? "s" : ""}${s.isAccepting ? "a" : ""}`).join("|"),
+        machine.transitions.map((t) => `${t.from}>${t.to}:${t.symbols.join("")}`).join("|"),
+      ].join("#"),
+    [source, target, regexInput, alphabet, machine],
+  );
+  const lastKey = useRef(inputKey);
+  useEffect(() => {
+    if (lastKey.current === inputKey) return;
+    lastKey.current = inputKey;
+    setResult(null);
+    setLogStep(0);
+    setError(null);
+  }, [inputKey]);
+
+
+
 
   /* ── tutor context (PUBLIC tier: nothing hidden here) ── */
   useEffect(() => {
@@ -210,9 +282,25 @@ export function Converter({
         setHighlights((h) => ({ ...h, [a.state]: "rose" })),
       ),
       onTutorAction("zoomTo", (a) => setHighlights((h) => ({ ...h, [a.state]: "cyan" }))),
+      // The tutor may set up a conversion for the student (and optionally run it).
+      onTutorAction("setConversion", (a) => {
+        setSource(a.source as RepId);
+        setTarget(a.target as RepId);
+        if (a.alphabet.length) setAlphabetText(a.alphabet.join(","));
+        if (a.regex !== null) setRegexInput(a.regex);
+        if (a.run) setPendingRun(true);
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, []);
+
+  /** Run after the tutor-applied inputs have landed in state. */
+  useEffect(() => {
+    if (!pendingRun) return;
+    setPendingRun(false);
+    convert();
+  }, [pendingRun, convert]);
+
 
   if (!active) return null;
 
@@ -348,6 +436,14 @@ export function Converter({
           <span className="badge" data-tone="blue">
             {REPS.find((r) => r.id === source)?.label} → {REPS.find((r) => r.id === target)?.label}
           </span>
+          {result?.kind === "machine" && (
+            <span className="badge" data-tone={result.verified.equivalent ? "accept" : "reject"}>
+              {result.verified.equivalent
+                ? "✓ same language as the source — verified"
+                : `⚠ differs from the source on "${result.verified.counterexample?.string || "ε"}"`}
+            </span>
+          )}
+
           {isolate && (
             <button
               className="tool-btn"

@@ -2,15 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PUMPING_LANGUAGES,
   adversarySplit,
+  buildPumpingLanguage,
   checkCandidate,
   judge,
   legalSplits,
   pump,
   splitLabel,
+  type PumpingLanguage,
   type Split,
   type Verdict,
 } from "@/lib/engine/pumping";
 import { Storage } from "@/lib/storage";
+import { onTutorAction } from "@/lib/tutor/actions";
+import { toast } from "sonner";
 import { Swords, RotateCcw } from "lucide-react";
 
 type Phase = "pick-p" | "pick-s" | "adversary" | "pick-i" | "won" | "lost";
@@ -22,7 +26,10 @@ interface Props {
 
 export function PumpingGame({ onContext }: Props) {
   const [langIndex, setLangIndex] = useState(0);
-  const lang = PUMPING_LANGUAGES[langIndex]!;
+  /** Languages the tutor authored this session, appended after the built-ins. */
+  const [authored, setAuthored] = useState<PumpingLanguage[]>([]);
+  const languages = useMemo(() => [...PUMPING_LANGUAGES, ...authored], [authored]);
+  const lang = languages[langIndex] ?? languages[0]!;
   const [p, setP] = useState(0);
   const [phase, setPhase] = useState<Phase>("pick-p");
   const [candidate, setCandidate] = useState("");
@@ -45,6 +52,35 @@ export function PumpingGame({ onContext }: Props) {
     setVerdicts([]);
     setTranscript([]);
   };
+
+  /* ── tutor-authored languages: <IALE_PUMPING_LANGUAGE kind="…" symbols="…" /> ── */
+  useEffect(
+    () =>
+      onTutorAction("pumpingLanguage", (a) => {
+        const built = buildPumpingLanguage(a.kind, a.symbols, a.name);
+        if (!built) {
+          toast.error(`Socratic proposed a language I couldn't build (${a.kind}).`);
+          return;
+        }
+        setAuthored((list) => {
+          const rest = list.filter((l) => l.id !== built.id);
+          const next = [...rest, built];
+          setLangIndex(PUMPING_LANGUAGES.length + next.length - 1);
+          return next;
+        });
+        setP(0);
+        setPhase("pick-p");
+        setCandidate("");
+        setNote(null);
+        setSplit(null);
+        setExponent("2");
+        setVerdicts([]);
+        setTranscript([]);
+        toast.success(`New language loaded: ${built.name}`);
+      }),
+    [],
+  );
+
 
   const startRound = () => {
     const chosen = 2 + Math.floor(Math.random() * 3);
@@ -106,6 +142,7 @@ export function PumpingGame({ onContext }: Props) {
           ? `Adversary decomposition on the board: ${splitLabel(split)}.`
           : "No decomposition on the board yet.",
         `Exponents tried: ${verdicts.map((v) => `"${v.pumped}" ${v.inLanguage ? "in L" : "not in L"}`).join("; ") || "none"}.`,
+        'You CAN author a new non-regular language here with <IALE_PUMPING_LANGUAGE kind="equal|triple|more|fewer|palindrome|ww|square|prime" symbols="a,b" name="…" /> — use it when the student asks for a different or harder language.',
         "HARD RULE for this module: never state which exponent i breaks the decomposition, and never hand the student a string s. Ask what quantity the language counts, what the constraint |xy| ≤ p forces y to consist of, and what happens to that count when y repeats.",
       ].join("\n"),
     );
@@ -127,7 +164,7 @@ export function PumpingGame({ onContext }: Props) {
 
         <div className="flex flex-col gap-1">
           <span className="section-label">Languages</span>
-          {PUMPING_LANGUAGES.map((l, i) => (
+          {languages.map((l, i) => (
             <button
               key={l.id}
               className="tape-row"
