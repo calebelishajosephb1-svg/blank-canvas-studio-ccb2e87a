@@ -2,15 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PUMPING_LANGUAGES,
   adversarySplit,
+  buildPumpingLanguage,
   checkCandidate,
   judge,
   legalSplits,
   pump,
   splitLabel,
+  type PumpingLanguage,
   type Split,
   type Verdict,
 } from "@/lib/engine/pumping";
 import { Storage } from "@/lib/storage";
+import { onTutorAction } from "@/lib/tutor/actions";
+import { toast } from "sonner";
 import { Swords, RotateCcw } from "lucide-react";
 
 type Phase = "pick-p" | "pick-s" | "adversary" | "pick-i" | "won" | "lost";
@@ -22,7 +26,10 @@ interface Props {
 
 export function PumpingGame({ onContext }: Props) {
   const [langIndex, setLangIndex] = useState(0);
-  const lang = PUMPING_LANGUAGES[langIndex]!;
+  /** Languages the tutor authored this session, appended after the built-ins. */
+  const [authored, setAuthored] = useState<PumpingLanguage[]>([]);
+  const languages = useMemo(() => [...PUMPING_LANGUAGES, ...authored], [authored]);
+  const lang = languages[langIndex] ?? languages[0]!;
   const [p, setP] = useState(0);
   const [phase, setPhase] = useState<Phase>("pick-p");
   const [candidate, setCandidate] = useState("");
@@ -45,6 +52,35 @@ export function PumpingGame({ onContext }: Props) {
     setVerdicts([]);
     setTranscript([]);
   };
+
+  /* ── tutor-authored languages: <IALE_PUMPING_LANGUAGE kind="…" symbols="…" /> ── */
+  useEffect(
+    () =>
+      onTutorAction("pumpingLanguage", (a) => {
+        const built = buildPumpingLanguage(a.kind, a.symbols, a.name);
+        if (!built) {
+          toast.error(`Socratic proposed a language I couldn't build (${a.kind}).`);
+          return;
+        }
+        setAuthored((list) => {
+          const rest = list.filter((l) => l.id !== built.id);
+          const next = [...rest, built];
+          setLangIndex(PUMPING_LANGUAGES.length + next.length - 1);
+          return next;
+        });
+        setP(0);
+        setPhase("pick-p");
+        setCandidate("");
+        setNote(null);
+        setSplit(null);
+        setExponent("2");
+        setVerdicts([]);
+        setTranscript([]);
+        toast.success(`New language loaded: ${built.name}`);
+      }),
+    [],
+  );
+
 
   const startRound = () => {
     const chosen = 2 + Math.floor(Math.random() * 3);
