@@ -37,7 +37,16 @@ export type TutorAction =
   | { type: "exportNotes" }
   | { type: "describeCanvas" }
   | { type: "showRecommendations" }
-  | { type: "challenge"; name: string; regex: string; difficulty: string; alphabet: string[] };
+  | { type: "challenge"; name: string; regex: string; difficulty: string; alphabet: string[] }
+  | { type: "pumpingLanguage"; kind: string; symbols: string[]; name: string }
+  | {
+      type: "setConversion";
+      source: string;
+      target: string;
+      alphabet: string[];
+      regex: string | null;
+      run: boolean;
+    };
 
 const TAG = /<IALE_([A-Z_]+)([^>]*)\/>/g;
 const TONES = ["blue", "rose", "cyan", "amber"] as const;
