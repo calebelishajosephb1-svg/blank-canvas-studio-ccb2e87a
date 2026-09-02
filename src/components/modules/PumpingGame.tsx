@@ -142,6 +142,7 @@ export function PumpingGame({ onContext }: Props) {
           ? `Adversary decomposition on the board: ${splitLabel(split)}.`
           : "No decomposition on the board yet.",
         `Exponents tried: ${verdicts.map((v) => `"${v.pumped}" ${v.inLanguage ? "in L" : "not in L"}`).join("; ") || "none"}.`,
+        'You CAN author a new non-regular language here with <IALE_PUMPING_LANGUAGE kind="equal|triple|more|fewer|palindrome|ww|square|prime" symbols="a,b" name="…" /> — use it when the student asks for a different or harder language.',
         "HARD RULE for this module: never state which exponent i breaks the decomposition, and never hand the student a string s. Ask what quantity the language counts, what the constraint |xy| ≤ p forces y to consist of, and what happens to that count when y repeats.",
       ].join("\n"),
     );
