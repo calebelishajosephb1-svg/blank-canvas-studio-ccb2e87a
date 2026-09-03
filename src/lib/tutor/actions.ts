@@ -40,6 +40,16 @@ export type TutorAction =
   | { type: "challenge"; name: string; regex: string; difficulty: string; alphabet: string[] }
   | { type: "pumpingLanguage"; kind: string; symbols: string[]; name: string }
   | {
+      type: "proofMove";
+      move: "set-p" | "split" | "objection" | "concede";
+      p: number | null;
+      x: string;
+      y: string;
+      z: string;
+      text: string;
+    }
+  | { type: "attack"; value: string; taunt: string }
+  | {
       type: "setConversion";
       source: string;
       target: string;
@@ -132,6 +142,29 @@ export const ACTION_REGISTRY: Record<string, Builder> = {
       ? { type: "pumpingLanguage", kind: a["kind"].toLowerCase(), symbols, name: a["name"] || "" }
       : null;
   },
+  // Proof Assistant: the tutor plays the adversary. Every move is re-validated
+  // by src/lib/engine/proof.ts, so an illegal p or decomposition is caught.
+  PROOF_MOVE: (a) => {
+    const moves = ["set-p", "split", "objection", "concede"] as const;
+    const move = (a["move"] || "").toLowerCase() as (typeof moves)[number];
+    if (!(moves as readonly string[]).includes(move)) return null;
+    const p = a["p"] !== undefined ? Math.floor(Number(a["p"])) : null;
+    return {
+      type: "proofMove",
+      move,
+      p: p !== null && Number.isFinite(p) ? p : null,
+      x: a["x"] ?? "",
+      y: a["y"] ?? "",
+      z: a["z"] ?? "",
+      text: a["text"] ?? "",
+    };
+  },
+  // Stump the machine: propose a candidate counterexample. The engine decides
+  // whether it actually lands.
+  ATTACK: (a) =>
+    a["string"] !== undefined || a["value"] !== undefined
+      ? { type: "attack", value: a["string"] ?? a["value"] ?? "", taunt: a["taunt"] ?? "" }
+      : null,
   // Converter: set up (and optionally run) a conversion for the student.
   SET_CONVERSION: (a) => {
     const reps = ["dfa", "nfa", "enfa", "regex"];
