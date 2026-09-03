@@ -2,10 +2,10 @@
 
 Approved feature menu lives in `.lovable/plan.md`. Shipping phase by phase.
 
-## Phase A (in progress) — Features 20 + 24
-- [ ] Feature 20 — Proof Assistant ("Prove it's not regular"): tile-based proof builder,
+## Phase A (done) — Features 20 + 24
+- [x] Feature 20 — Proof Assistant ("Prove it's not regular"): tile-based proof builder,
       engine-validated moves, AI adversary via `IALE_PROOF_MOVE`.
-- [ ] Feature 24 — Stump the machine: student builds a DFA, AI/engine attacks it with
+- [x] Feature 24 — Stump the machine: student builds a DFA, AI/engine attacks it with
       verified counterexample strings, survival streak scoring.
 
 ## Phase B — Feature 23 (AI Lesson Mode)
