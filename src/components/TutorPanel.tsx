@@ -28,6 +28,7 @@ import {
 } from "@/lib/tutor/byok";
 import { checkReply } from "@/lib/tutor/guard";
 import { dispatchTutorActions, parseTutorActions } from "@/lib/tutor/actions";
+import { parseLesson } from "@/lib/tutor/lesson";
 import { narrateContext } from "@/lib/tutor/narrate";
 import { buildRecommendations, type Recommendation } from "@/lib/engine/recommendations";
 import { Storage } from "@/lib/storage";
@@ -361,7 +362,8 @@ export function TutorPanel({
       setError(res.error);
       return;
     }
-    const { cleanText, actions } = parseTutorActions(res.text);
+    const { cleanText: withLesson, lesson } = parseLesson(res.text);
+    const { cleanText, actions } = parseTutorActions(withLesson);
     const verdict = checkReply(stripThink(cleanText), {
       moduleId,
       finalVisible: reveal.current[moduleId] ?? true,
@@ -372,6 +374,9 @@ export function TutorPanel({
     if (!verdict.allowed) return;
 
     dispatchTutorActions(actions);
+    // Feature 23 — Lesson Mode: hand the validated script to the player.
+    if (lesson)
+      window.dispatchEvent(new CustomEvent("iale-lesson", { detail: lesson }));
     for (const a of actions) {
       if (a.type === "linkConcept")
         setChips((c) =>
