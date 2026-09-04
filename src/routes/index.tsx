@@ -29,6 +29,7 @@ import { CompareLab } from "@/components/modules/CompareLab";
 import { ProofLab } from "@/components/modules/ProofLab";
 import { StumpLab } from "@/components/modules/StumpLab";
 import { TutorPanel } from "@/components/TutorPanel";
+import { LessonPlayer } from "@/components/LessonPlayer";
 import { useTheme } from "@/lib/theme";
 import { Storage } from "@/lib/storage";
 import { detectMisconceptions } from "@/lib/engine/algorithms";
@@ -238,6 +239,7 @@ function Index() {
           getContext={getContext}
         />
       </div>
+      <LessonPlayer />
       <Toaster />
     </div>
   );
