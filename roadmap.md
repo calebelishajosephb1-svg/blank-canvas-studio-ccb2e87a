@@ -14,7 +14,11 @@ Approved feature menu lives in `.lovable/plan.md`. Shipping phase by phase.
 - [x] `src/components/LessonPlayer.tsx` plays beats back, blocks on checkpoints and
       grades answers engine-side (`gradeAnswer`) — the model never adjudicates.
 
-## Phase C — Feature 21 (PDA lab, then mini TM lab)
+## Phase C (done) — Feature 21
+- [x] `src/lib/engine/pda.ts` — BFS stack simulator, step cap, presets (balanced, aⁿbⁿ, wcwᴿ, equal, palindrome).
+- [x] `src/lib/engine/tm.ts` — sparse-tape TM, 10k step cap, presets (aⁿbⁿcⁿ, palindrome, increment, runaway).
+- [x] `PDALab.tsx` / `TMLab.tsx` modules + tabs; tutor tags `IALE_PDA_CHALLENGE`, `IALE_STACK_STEP`,
+      `IALE_TM_CHALLENGE`, `IALE_TAPE_WRITE` / `IALE_TM_TRACE`.
 ## Phase D — Features 25, 26, 27 (curriculum path, duel links, PWA + worksheets)
 
 Constraint for every phase: static-only, deployable to Netlify (`dist/client` + SPA fallback).

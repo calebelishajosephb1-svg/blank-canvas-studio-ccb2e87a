@@ -14,6 +14,8 @@ import {
   GitCompare,
   ScrollText,
   Crosshair,
+  Layers3,
+  Tally5,
   Sun,
   Workflow,
 } from "lucide-react";
@@ -28,6 +30,8 @@ import { PumpingGame } from "@/components/modules/PumpingGame";
 import { CompareLab } from "@/components/modules/CompareLab";
 import { ProofLab } from "@/components/modules/ProofLab";
 import { StumpLab } from "@/components/modules/StumpLab";
+import { PDALab } from "@/components/modules/PDALab";
+import { TMLab } from "@/components/modules/TMLab";
 import { TutorPanel } from "@/components/TutorPanel";
 import { LessonPlayer } from "@/components/LessonPlayer";
 import { useTheme } from "@/lib/theme";
@@ -69,6 +73,8 @@ type TabId =
   | "pumping"
   | "proof"
   | "stump"
+  | "pda"
+  | "tm"
   | "compare";
 
 const TABS: { id: TabId; label: string; icon: typeof Compass }[] = [
@@ -82,6 +88,8 @@ const TABS: { id: TabId; label: string; icon: typeof Compass }[] = [
   { id: "pumping", label: "Pumping Lemma", icon: Swords },
   { id: "proof", label: "Proof Lab", icon: ScrollText },
   { id: "stump", label: "Stump It", icon: Crosshair },
+  { id: "pda", label: "PDA Lab", icon: Layers3 },
+  { id: "tm", label: "TM Lab", icon: Tally5 },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
 ];
 
@@ -227,6 +235,12 @@ function Index() {
           </ModulePane>
           <ModulePane show={tab === "stump"}>
             <StumpLab active={tab === "stump"} onContext={bind("stump")} />
+          </ModulePane>
+          <ModulePane show={tab === "pda"}>
+            <PDALab active={tab === "pda"} onContext={bind("pda")} />
+          </ModulePane>
+          <ModulePane show={tab === "tm"}>
+            <TMLab active={tab === "tm"} onContext={bind("tm")} />
           </ModulePane>
           <ModulePane show={tab === "analytics"}>
             <Analytics active={tab === "analytics"} onContext={bind("analytics")} onGoto={goto} />
