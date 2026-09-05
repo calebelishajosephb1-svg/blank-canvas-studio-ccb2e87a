@@ -285,8 +285,14 @@ export function TMLab({ onContext }: Props) {
                       `Still running after ${ran.run.totalSteps.toLocaleString()} steps. There is no general way to know whether it ever stops — that is the halting problem, live.`}
                   </p>
                   {ran.run.output && (
-                    <p className="mt-1 text-[11px]" style={{ fontFamily: "var(--font-mono-family)" }}>
-                      Final tape: {ran.run.output}
+                    <p
+                      className="mt-1 break-all text-[11px]"
+                      style={{ fontFamily: "var(--font-mono-family)" }}
+                    >
+                      Final tape:{" "}
+                      {ran.run.output.length > 240
+                        ? `${ran.run.output.slice(0, 240)}… (${ran.run.output.length} cells)`
+                        : ran.run.output}
                     </p>
                   )}
                 </div>
