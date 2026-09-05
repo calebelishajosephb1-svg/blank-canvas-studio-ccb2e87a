@@ -49,6 +49,10 @@ export type TutorAction =
       text: string;
     }
   | { type: "attack"; value: string; taunt: string }
+  | { type: "pdaChallenge"; preset: string; input: string }
+  | { type: "stackStep"; value: string }
+  | { type: "tmChallenge"; preset: string; input: string }
+  | { type: "tapeWrite"; value: string; run: boolean }
   | {
       type: "setConversion";
       source: string;
@@ -165,6 +169,21 @@ export const ACTION_REGISTRY: Record<string, Builder> = {
     a["string"] !== undefined || a["value"] !== undefined
       ? { type: "attack", value: a["string"] ?? a["value"] ?? "", taunt: a["taunt"] ?? "" }
       : null,
+  // PDA lab: load one of the built-in stack machines and (optionally) a string.
+  PDA_CHALLENGE: (a) =>
+    a["preset"] ? { type: "pdaChallenge", preset: a["preset"], input: a["input"] ?? "" } : null,
+  // PDA lab: run a string and step the stack for the student.
+  STACK_STEP: (a) => (a["value"] !== undefined ? { type: "stackStep", value: a["value"] } : null),
+  // TM lab: load one of the built-in tape machines.
+  TM_CHALLENGE: (a) =>
+    a["preset"] ? { type: "tmChallenge", preset: a["preset"], input: a["input"] ?? "" } : null,
+  // TM lab: write a string onto the tape; run="false" leaves it un-executed.
+  TAPE_WRITE: (a) =>
+    a["value"] !== undefined
+      ? { type: "tapeWrite", value: a["value"], run: a["run"] !== "false" }
+      : null,
+  TM_TRACE: (a) =>
+    a["value"] !== undefined ? { type: "tapeWrite", value: a["value"], run: true } : null,
   // Converter: set up (and optionally run) a conversion for the student.
   SET_CONVERSION: (a) => {
     const reps = ["dfa", "nfa", "enfa", "regex"];
